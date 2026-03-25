@@ -6,14 +6,17 @@ import { checkStatus } from '../services/api';
 import { cn } from '../lib/utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useSettings } from '../context/SettingsContext';
 
 export default function CheckStatus() {
+  const { settings } = useSettings();
   const [noPendaftaran, setNoPendaftaran] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<{
     noPendaftaran: string;
     namaLengkap: string;
     status: string;
+    alasanPenolakan?: string;
   } | null>(null);
   const [error, setError] = useState('');
 
@@ -43,58 +46,147 @@ export default function CheckStatus() {
     if (!data) return;
     
     const doc = new jsPDF();
+    let currentY = 20;
     
-    // Header
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('BUKTI KELULUSAN PPDB', 105, 20, { align: 'center' });
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Tahun Ajaran ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, 105, 28, { align: 'center' });
-    
-    doc.line(20, 35, 190, 35);
+    // Header (Kop Surat)
+    if (settings?.kopSurat) {
+      try {
+        doc.addImage(settings.kopSurat, 'JPEG', 20, 10, 170, 30);
+        currentY = 45;
+        doc.line(20, currentY, 190, currentY);
+        currentY += 10;
+        
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('BUKTI KELULUSAN PPDB', 105, currentY, { align: 'center' });
+        currentY += 8;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Tahun Ajaran ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, 105, currentY, { align: 'center' });
+        currentY += 6;
+        if (settings?.nomorSurat) {
+          doc.setFontSize(11);
+          doc.text(`Nomor: ${settings.nomorSurat}`, 105, currentY, { align: 'center' });
+          currentY += 6;
+        }
+        currentY += 4;
+      } catch (e) {
+        console.error("Error adding kop surat", e);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('BUKTI KELULUSAN PPDB', 105, currentY, { align: 'center' });
+        currentY += 8;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Tahun Ajaran ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, 105, currentY, { align: 'center' });
+        currentY += 6;
+        if (settings?.nomorSurat) {
+          doc.setFontSize(11);
+          doc.text(`Nomor: ${settings.nomorSurat}`, 105, currentY, { align: 'center' });
+          currentY += 6;
+        }
+        doc.line(20, currentY, 190, currentY);
+        currentY += 10;
+      }
+    } else {
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('BUKTI KELULUSAN PPDB', 105, currentY, { align: 'center' });
+      currentY += 8;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Tahun Ajaran ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, 105, currentY, { align: 'center' });
+      currentY += 6;
+      if (settings?.nomorSurat) {
+        doc.setFontSize(11);
+        doc.text(`Nomor: ${settings.nomorSurat}`, 105, currentY, { align: 'center' });
+        currentY += 6;
+      }
+      doc.line(20, currentY, 190, currentY);
+      currentY += 10;
+    }
     
     // Content
     doc.setFontSize(11);
-    doc.text('Berdasarkan hasil seleksi Penerimaan Peserta Didik Baru (PPDB),', 20, 45);
-    doc.text('menyatakan bahwa:', 20, 52);
+    doc.text('Berdasarkan hasil seleksi Penerimaan Peserta Didik Baru (PPDB),', 20, currentY);
+    currentY += 7;
+    doc.text('menyatakan bahwa:', 20, currentY);
+    currentY += 13;
     
-    const startY = 65;
     const lineSpacing = 8;
     
     doc.setFont('helvetica', 'bold');
-    doc.text('No. Pendaftaran', 30, startY);
-    doc.text(':', 70, startY);
-    doc.text(data.noPendaftaran || '-', 75, startY);
+    doc.text('No. Pendaftaran', 30, currentY);
+    doc.text(':', 70, currentY);
+    doc.text(data.noPendaftaran || '-', 75, currentY);
     
     doc.setFont('helvetica', 'normal');
-    doc.text('Nama Lengkap', 30, startY + lineSpacing);
-    doc.text(':', 70, startY + lineSpacing);
-    doc.text(data.namaLengkap || '-', 75, startY + lineSpacing);
+    doc.text('Nama Lengkap', 30, currentY + lineSpacing);
+    doc.text(':', 70, currentY + lineSpacing);
+    doc.text(data.namaLengkap || '-', 75, currentY + lineSpacing);
     
-    doc.text('Status', 30, startY + lineSpacing * 2);
-    doc.text(':', 70, startY + lineSpacing * 2);
+    doc.text('Status', 30, currentY + lineSpacing * 2);
+    doc.text(':', 70, currentY + lineSpacing * 2);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 128, 0); // Green
-    doc.text('LULUS', 75, startY + lineSpacing * 2);
+    doc.text('LULUS', 75, currentY + lineSpacing * 2);
     doc.setTextColor(0, 0, 0); // Reset to black
     
     // Requirements
+    currentY += lineSpacing * 4;
     doc.setFont('helvetica', 'normal');
-    doc.text('Diharapkan segera melakukan daftar ulang dengan membawa persyaratan berikut:', 20, startY + lineSpacing * 4);
+    doc.text('Diharapkan segera melakukan daftar ulang dengan membawa persyaratan berikut:', 20, currentY);
     
-    const reqY = startY + lineSpacing * 5;
-    doc.text('1. Bukti Kelulusan ini (dicetak)', 25, reqY);
-    doc.text('2. Fotokopi Akta Kelahiran (2 lembar)', 25, reqY + lineSpacing);
-    doc.text('3. Fotokopi Kartu Keluarga (2 lembar)', 25, reqY + lineSpacing * 2);
-    doc.text('4. Pas Foto 3x4 (4 lembar)', 25, reqY + lineSpacing * 3);
-    doc.text('5. Melakukan pembayaran administrasi awal', 25, reqY + lineSpacing * 4);
+    currentY += lineSpacing;
+    const reqText = settings?.persyaratanDaftarUlang || '1. Bukti Kelulusan ini (dicetak)\n2. Fotokopi Akta Kelahiran (2 lembar)\n3. Fotokopi Kartu Keluarga (2 lembar)\n4. Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal';
+    const splitReq = doc.splitTextToSize(reqText, 160);
+    doc.text(splitReq, 25, currentY);
     
-    // Footer
+    currentY += splitReq.length * 6 + 20;
+
+    // Signature Area
     const today = new Date();
     const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+    const tempat = settings?.tempatSurat || '....................';
+    const tanggal = settings?.tanggalSurat || dateStr;
     
+    doc.text(`${tempat}, ${tanggal}`, 140, currentY);
+    doc.text('Kepala Sekolah', 140, currentY + 6);
+    
+    if (settings?.stempelSekolah) {
+      try {
+        doc.addImage(settings.stempelSekolah, 'PNG', 120, currentY + 8, 30, 30);
+      } catch (e) {
+        console.error("Error adding stempel", e);
+      }
+    }
+    
+    if (settings?.tandaTanganKepalaSekolah) {
+      try {
+        doc.addImage(settings.tandaTanganKepalaSekolah, 'PNG', 140, currentY + 10, 40, 20);
+      } catch (e) {
+        console.error("Error adding tanda tangan", e);
+      }
+    }
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text(settings?.namaKepalaSekolah || 'Kepala Sekolah', 140, currentY + 35);
+    doc.setFont('helvetica', 'normal');
+    if (settings?.nipKepalaSekolah) {
+      doc.text(`NIP. ${settings.nipKepalaSekolah}`, 140, currentY + 40);
+    }
+    
+    // Catatan Tambahan
+    if (settings?.catatanTambahan) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'italic');
+      const splitCatatan = doc.splitTextToSize(`Catatan: ${settings.catatanTambahan}`, 170);
+      doc.text(splitCatatan, 20, 260);
+    }
+    
+    // Footer
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
     doc.text(`Dicetak pada: ${dateStr}`, 20, 280);
     
     doc.save(`Bukti_Kelulusan_${data.noPendaftaran}.pdf`);
@@ -113,13 +205,12 @@ export default function CheckStatus() {
             
             <div className="bg-white rounded-lg p-4 border border-green-100 text-left mb-4">
               <h4 className="font-semibold text-green-800 mb-2 text-sm">Persyaratan Daftar Ulang:</h4>
-              <ul className="list-disc list-inside text-sm text-green-700 space-y-1">
-                <li>Membawa Bukti Kelulusan yang dicetak</li>
-                <li>Membawa Fotokopi Akta Kelahiran (2 lembar)</li>
-                <li>Membawa Fotokopi Kartu Keluarga (2 lembar)</li>
-                <li>Membawa Pas Foto 3x4 (4 lembar)</li>
-                <li>Melakukan pembayaran administrasi awal</li>
-              </ul>
+              {settings?.tanggalDaftarUlang && (
+                <p className="text-sm text-green-700 mb-2 font-medium">Tanggal Daftar Ulang: {new Date(settings.tanggalDaftarUlang).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              )}
+              <div className="text-sm text-green-700 whitespace-pre-line">
+                {settings?.persyaratanDaftarUlang || '1. Membawa Bukti Kelulusan yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal'}
+              </div>
             </div>
 
             <button
@@ -137,7 +228,13 @@ export default function CheckStatus() {
               <XCircle className="text-red-600" size={32} />
             </div>
             <h3 className="text-2xl font-bold text-red-800 mb-2">Mohon Maaf, Anda Tidak Lulus</h3>
-            <p className="text-red-700">Tetap semangat dan jangan menyerah.</p>
+            <p className="text-red-700 mb-4">Tetap semangat dan jangan menyerah.</p>
+            {data?.alasanPenolakan && (
+              <div className="bg-white rounded-lg p-4 border border-red-100 text-left">
+                <h4 className="font-semibold text-red-800 mb-1 text-sm">Alasan:</h4>
+                <p className="text-sm text-red-700 whitespace-pre-line">{data.alasanPenolakan}</p>
+              </div>
+            )}
           </div>
         );
       default:

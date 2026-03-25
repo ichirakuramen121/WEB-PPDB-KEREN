@@ -22,9 +22,13 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center gap-2">
-            <div className="bg-blue-600 p-2 rounded-lg text-white">
-              <GraduationCap size={24} />
-            </div>
+            {settings?.logoSekolah ? (
+              <img src={settings.logoSekolah} alt="Logo Sekolah" className="h-10 w-auto object-contain" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="bg-blue-600 p-2 rounded-lg text-white">
+                <GraduationCap size={24} />
+              </div>
+            )}
             <span className="font-bold text-xl tracking-tight text-slate-900">
               {settings?.namaSekolah || 'SDN Harapan Bangsa'}
             </span>

@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, CheckCircle, AlertCircle, FileText, Image as ImageIcon, Loader2, Download } from 'lucide-react';
+import { Upload, AlertCircle, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
 import { submitRegistration, RegistrationData } from '../services/api';
@@ -13,32 +13,15 @@ export default function RegistrationForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAgreed, setIsAgreed] = useState(false);
-  const [formData, setFormData] = useState<RegistrationData>({
-    namaLengkap: '',
-    nik: '',
-    tempatLahir: '',
-    tanggalLahir: '',
-    jenisKelamin: '',
-    alamat: '',
-    namaOrangTua: '',
-    noHp: '',
-    fotoSiswa: '',
-    kk: '',
-    aktaKelahiran: ''
-  });
-
-  const [previews, setPreviews] = useState({
-    fotoSiswa: '',
-    kk: '',
-    aktaKelahiran: ''
-  });
+  const [formData, setFormData] = useState<RegistrationData>({});
+  const [previews, setPreviews] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: keyof RegistrationData) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -58,8 +41,8 @@ export default function RegistrationForm() {
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
-      setFormData(prev => ({ ...prev, [field]: base64String }));
-      setPreviews(prev => ({ ...prev, [field]: base64String }));
+      setFormData(prev => ({ ...prev, [fieldId]: base64String }));
+      setPreviews(prev => ({ ...prev, [fieldId]: base64String }));
     };
     reader.readAsDataURL(file);
   };
@@ -82,7 +65,7 @@ export default function RegistrationForm() {
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     
-    const startY = 60;
+    let startY = 60;
     const lineHeight = 10;
     
     const formatDate = (dateString: string) => {
@@ -99,27 +82,25 @@ export default function RegistrationForm() {
     doc.text("No. Pendaftaran", 20, startY);
     doc.text(":", 70, startY);
     doc.text(noPendaftaran, 75, startY);
+    startY += lineHeight;
 
     doc.setFont("helvetica", "normal");
-    doc.text("Nama Lengkap", 20, startY + lineHeight);
-    doc.text(":", 70, startY + lineHeight);
-    doc.text(formData.namaLengkap, 75, startY + lineHeight);
-
-    doc.text("NIK", 20, startY + lineHeight * 2);
-    doc.text(":", 70, startY + lineHeight * 2);
-    doc.text(formData.nik, 75, startY + lineHeight * 2);
-
-    doc.text("Tempat, Tgl Lahir", 20, startY + lineHeight * 3);
-    doc.text(":", 70, startY + lineHeight * 3);
-    doc.text(`${formData.tempatLahir}, ${formatDate(formData.tanggalLahir)}`, 75, startY + lineHeight * 3);
-
-    doc.text("Jenis Kelamin", 20, startY + lineHeight * 4);
-    doc.text(":", 70, startY + lineHeight * 4);
-    doc.text(formData.jenisKelamin, 75, startY + lineHeight * 4);
-
-    doc.text("Nama Orang Tua", 20, startY + lineHeight * 5);
-    doc.text(":", 70, startY + lineHeight * 5);
-    doc.text(formData.namaOrangTua, 75, startY + lineHeight * 5);
+    
+    settings?.formFields?.forEach(field => {
+      if (field.type !== 'file') {
+        doc.text(field.label, 20, startY);
+        doc.text(":", 70, startY);
+        let value = formData[field.label] || '-';
+        if (field.type === 'date') {
+          value = formatDate(value);
+        }
+        
+        // Handle long text
+        const splitText = doc.splitTextToSize(value, 115);
+        doc.text(splitText, 75, startY);
+        startY += lineHeight * splitText.length;
+      }
+    });
 
     // Footer
     doc.setFontSize(10);
@@ -142,12 +123,13 @@ export default function RegistrationForm() {
       return;
     }
 
-    // Basic validation
-    if (!formData.fotoSiswa || !formData.kk || !formData.aktaKelahiran) {
+    // Basic validation for files
+    const missingFiles = settings?.formFields?.filter(f => f.type === 'file' && f.required && !formData[f.label]);
+    if (missingFiles && missingFiles.length > 0) {
       Swal.fire({
         icon: 'warning',
         title: 'Berkas Belum Lengkap',
-        text: 'Mohon unggah semua dokumen persyaratan (Foto, KK, Akta Kelahiran)',
+        text: `Mohon unggah dokumen: ${missingFiles.map(f => f.label).join(', ')}`,
         confirmButtonColor: '#3b82f6'
       });
       return;
@@ -212,6 +194,87 @@ export default function RegistrationForm() {
     );
   }
 
+  const renderField = (field: any) => {
+    const commonClasses = "w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors";
+    
+    switch (field.type) {
+      case 'textarea':
+        return (
+          <textarea
+            name={field.label}
+            required={field.required}
+            rows={3}
+            value={formData[field.label] || ''}
+            onChange={handleChange}
+            className={`${commonClasses} resize-none`}
+            placeholder={field.label}
+          />
+        );
+      case 'select':
+        return (
+          <select
+            name={field.label}
+            required={field.required}
+            value={formData[field.label] || ''}
+            onChange={handleChange}
+            className={`${commonClasses} bg-white`}
+          >
+            <option value="">Pilih {field.label}</option>
+            {field.options?.map((opt: string) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        );
+      case 'file':
+        return (
+          <div className="relative flex-grow border-2 border-dashed border-slate-300 rounded-xl hover:border-blue-500 transition-colors bg-slate-50 group overflow-hidden h-40">
+            <input
+              type="file"
+              accept="image/jpeg, image/png, application/pdf"
+              required={field.required}
+              onChange={(e) => handleFileChange(e, field.label)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            {previews[field.label] ? (
+              <div className="absolute inset-0">
+                {previews[field.label].startsWith('data:image') ? (
+                  <img src={previews[field.label]} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full p-4 text-center bg-blue-50">
+                    <FileText className="w-12 h-12 text-blue-500 mb-2" />
+                    <span className="text-sm text-blue-700 font-medium">File Terpilih</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-white text-sm font-medium">Ubah File</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                <Upload className="w-8 h-8 text-slate-400 mb-2 group-hover:text-blue-500 transition-colors" />
+                <span className="text-sm text-slate-500 group-hover:text-blue-600">Klik atau Drag file</span>
+              </div>
+            )}
+          </div>
+        );
+      default:
+        return (
+          <input
+            type={field.type}
+            name={field.label}
+            required={field.required}
+            value={formData[field.label] || ''}
+            onChange={handleChange}
+            className={commonClasses}
+            placeholder={field.label}
+          />
+        );
+    }
+  };
+
+  const textFields = settings?.formFields?.filter(f => f.type !== 'file') || [];
+  const fileFields = settings?.formFields?.filter(f => f.type === 'file') || [];
+
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
@@ -226,274 +289,83 @@ export default function RegistrationForm() {
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 space-y-8">
-            {/* Data Diri Section */}
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
-                Data Diri Siswa
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap *</label>
-                  <input
-                    type="text"
-                    name="namaLengkap"
-                    required
-                    value={formData.namaLengkap}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Sesuai Akta Kelahiran"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">NIK *</label>
-                  <input
-                    type="text"
-                    name="nik"
-                    required
-                    pattern="[0-9]{16}"
-                    maxLength={16}
-                    value={formData.nik}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="16 Digit NIK"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Jenis Kelamin *</label>
-                  <select
-                    name="jenisKelamin"
-                    required
-                    value={formData.jenisKelamin}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
-                  >
-                    <option value="">Pilih Jenis Kelamin</option>
-                    <option value="Laki-laki">Laki-laki</option>
-                    <option value="Perempuan">Perempuan</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Tempat Lahir *</label>
-                  <input
-                    type="text"
-                    name="tempatLahir"
-                    required
-                    value={formData.tempatLahir}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Kota/Kabupaten"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Tanggal Lahir *</label>
-                  <input
-                    type="date"
-                    name="tanggalLahir"
-                    required
-                    value={formData.tanggalLahir}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-
-                <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Alamat Lengkap *</label>
-                  <textarea
-                    name="alamat"
-                    required
-                    rows={3}
-                    value={formData.alamat}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                    placeholder="Jalan, RT/RW, Kelurahan, Kecamatan"
-                  ></textarea>
+            
+            {textFields.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
+                  <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
+                  Data Pendaftar
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {textFields.map(field => (
+                    <div key={field.id} className={field.type === 'textarea' ? 'col-span-1 md:col-span-2' : ''}>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        {field.label} {field.required && '*'}
+                      </label>
+                      {renderField(field)}
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Data Orang Tua Section */}
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
-                Data Orang Tua / Wali
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Nama Orang Tua/Wali *</label>
-                  <input
-                    type="text"
-                    name="namaOrangTua"
-                    required
-                    value={formData.namaOrangTua}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Nama Lengkap"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">No. WhatsApp Aktif *</label>
-                  <input
-                    type="tel"
-                    name="noHp"
-                    required
-                    pattern="[0-9]+"
-                    value={formData.noHp}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="08xxxxxxxxxx"
-                  />
+            {fileFields.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
+                  <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
+                  Upload Berkas
+                </h3>
+                <p className="text-sm text-slate-500 mb-6 flex items-center gap-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                  <AlertCircle size={16} className="text-blue-500 shrink-0" />
+                  Format file: JPG/PNG/PDF. Ukuran maksimal: 2MB per file.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {fileFields.map(field => (
+                    <div key={field.id} className="flex flex-col">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        {field.label} {field.required && '*'}
+                      </label>
+                      {renderField(field)}
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Upload Berkas Section */}
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
-                Upload Berkas
-              </h3>
-              <p className="text-sm text-slate-500 mb-6 flex items-center gap-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                <AlertCircle size={16} className="text-blue-500 shrink-0" />
-                Format file: JPG/PNG/PDF. Ukuran maksimal: 2MB per file.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Foto Siswa */}
-                <div className="flex flex-col">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Pas Foto 3x4 *</label>
-                  <div className="relative flex-grow border-2 border-dashed border-slate-300 rounded-xl hover:border-blue-500 transition-colors bg-slate-50 group overflow-hidden">
-                    <input
-                      type="file"
-                      accept="image/jpeg, image/png"
-                      required
-                      onChange={(e) => handleFileChange(e, 'fotoSiswa')}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    {previews.fotoSiswa ? (
-                      <div className="absolute inset-0">
-                        <img src={previews.fotoSiswa} alt="Preview" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-white text-sm font-medium">Ubah Foto</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-40 p-4 text-center">
-                        <ImageIcon className="w-8 h-8 text-slate-400 mb-2 group-hover:text-blue-500 transition-colors" />
-                        <span className="text-sm text-slate-500 group-hover:text-blue-600">Klik atau Drag file</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Kartu Keluarga */}
-                <div className="flex flex-col">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Kartu Keluarga *</label>
-                  <div className="relative flex-grow border-2 border-dashed border-slate-300 rounded-xl hover:border-blue-500 transition-colors bg-slate-50 group overflow-hidden">
-                    <input
-                      type="file"
-                      accept="image/jpeg, image/png, application/pdf"
-                      required
-                      onChange={(e) => handleFileChange(e, 'kk')}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    {previews.kk ? (
-                      <div className="absolute inset-0 bg-blue-50 flex flex-col items-center justify-center p-4">
-                        <CheckCircle className="w-8 h-8 text-green-500 mb-2" />
-                        <span className="text-sm font-medium text-slate-700 text-center truncate w-full">File Terpilih</span>
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-white text-sm font-medium">Ubah File</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-40 p-4 text-center">
-                        <FileText className="w-8 h-8 text-slate-400 mb-2 group-hover:text-blue-500 transition-colors" />
-                        <span className="text-sm text-slate-500 group-hover:text-blue-600">Klik atau Drag file</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Akta Kelahiran */}
-                <div className="flex flex-col">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Akta Kelahiran *</label>
-                  <div className="relative flex-grow border-2 border-dashed border-slate-300 rounded-xl hover:border-blue-500 transition-colors bg-slate-50 group overflow-hidden">
-                    <input
-                      type="file"
-                      accept="image/jpeg, image/png, application/pdf"
-                      required
-                      onChange={(e) => handleFileChange(e, 'aktaKelahiran')}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    {previews.aktaKelahiran ? (
-                      <div className="absolute inset-0 bg-blue-50 flex flex-col items-center justify-center p-4">
-                        <CheckCircle className="w-8 h-8 text-green-500 mb-2" />
-                        <span className="text-sm font-medium text-slate-700 text-center truncate w-full">File Terpilih</span>
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-white text-sm font-medium">Ubah File</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-40 p-4 text-center">
-                        <FileText className="w-8 h-8 text-slate-400 mb-2 group-hover:text-blue-500 transition-colors" />
-                        <span className="text-sm text-slate-500 group-hover:text-blue-600">Klik atau Drag file</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="pt-6 border-t border-slate-200">
-              <div className="mb-6 flex items-start gap-3 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                <div className="flex items-center h-5 mt-0.5">
+            {/* Pernyataan Kebenaran Data */}
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <div className="flex-shrink-0 mt-1">
                   <input
-                    id="agreement"
-                    name="agreement"
                     type="checkbox"
                     checked={isAgreed}
                     onChange={(e) => setIsAgreed(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
+                    className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
                   />
                 </div>
-                <div className="text-sm">
-                  <label htmlFor="agreement" className="font-medium text-slate-900 cursor-pointer">
-                    Pernyataan Kebenaran Data
-                  </label>
-                  <p className="text-slate-600 mt-1">
-                    Saya menyatakan bahwa data yang saya isikan pada formulir ini adalah benar dan dapat dipertanggungjawabkan. Apabila di kemudian hari ditemukan data yang tidak benar, saya bersedia menerima sanksi sesuai ketentuan yang berlaku.
-                  </p>
+                <div className="text-sm text-slate-700">
+                  <span className="font-semibold block mb-1">Pernyataan Kebenaran Data</span>
+                  Saya menyatakan bahwa data yang saya isikan dalam formulir pendaftaran ini adalah benar dan dapat dipertanggungjawabkan. Apabila di kemudian hari ditemukan data yang tidak sesuai, saya bersedia menerima sanksi sesuai ketentuan yang berlaku.
                 </div>
-              </div>
+              </label>
+            </div>
 
+            <div className="pt-4 border-t border-slate-100">
               <button
                 type="submit"
-                disabled={isSubmitting || !isAgreed}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-md hover:shadow-lg disabled:opacity-70 flex items-center justify-center"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="animate-spin" size={24} />
-                    Memproses Pendaftaran...
+                    <Loader2 className="animate-spin mr-2" size={24} />
+                    Memproses...
                   </>
                 ) : (
-                  <>
-                    <Upload size={24} />
-                    Kirim Formulir Pendaftaran
-                  </>
+                  'Kirim Pendaftaran'
                 )}
               </button>
-              <p className="text-center text-sm text-slate-500 mt-4">
-                Dengan mengirimkan formulir ini, Anda menyatakan bahwa data yang diisi adalah benar.
-              </p>
             </div>
           </form>
         </motion.div>

@@ -1,7 +1,7 @@
 // Service to interact with Google Apps Script Backend
 
 // To use the real backend, replace this URL with your deployed Google Apps Script Web App URL
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxZKBF4J2lvyCbX2K0t1-GV7b94K3Dtc_L3vUeZs2bCgnx6dkOi9Lg6cWaVgzhBHRbD/exec"; 
+const GAS_WEB_APP_URL = ""; 
 
 export interface FormField {
   id: string;
@@ -19,6 +19,20 @@ export interface AppSettings {
   deskripsi: string;
   statusPendaftaran: 'Buka' | 'Tutup';
   formFields: FormField[];
+  persyaratanDaftarUlang?: string;
+  tanggalDaftarUlang?: string;
+  logoSekolah?: string;
+  kopSurat?: string;
+  namaKepalaSekolah?: string;
+  tandaTanganKepalaSekolah?: string;
+  stempelSekolah?: string;
+  tahunPendaftaran?: string;
+  nomorSurat?: string;
+  tempatSurat?: string;
+  tanggalSurat?: string;
+  nipKepalaSekolah?: string;
+  catatanTambahan?: string;
+  gambarHeaderBeranda?: string;
 }
 
 export interface RegistrationData {
@@ -29,6 +43,7 @@ export interface AdminData extends RegistrationData {
   Timestamp: string;
   'No Pendaftaran': string;
   Status: 'Proses' | 'Lulus' | 'Tidak Lulus';
+  'Alasan Penolakan'?: string;
 }
 
 // Mock data for preview if GAS URL is not set
@@ -39,6 +54,10 @@ let mockSettings: AppSettings = {
   email: "info@sdnharapanbangsa.sch.id",
   deskripsi: "Mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan siap menghadapi tantangan masa depan dengan pendidikan berkualitas.",
   statusPendaftaran: "Buka",
+  persyaratanDaftarUlang: "1. Membawa Bukti Kelulusan yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal",
+  tanggalDaftarUlang: "2024-07-15",
+  logoSekolah: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop",
+  tahunPendaftaran: new Date().getFullYear().toString(),
   formFields: [
     { id: "Nama Lengkap", label: "Nama Lengkap", type: "text", required: true },
     { id: "NIK", label: "NIK", type: "text", required: true },
@@ -119,10 +138,11 @@ export const submitRegistration = async (data: RegistrationData) => {
     if (mockSettings.statusPendaftaran === 'Tutup') {
       return { status: "error", message: "Pendaftaran sedang ditutup." };
     }
+    const year = mockSettings.tahunPendaftaran || new Date().getFullYear().toString();
     const newEntry: AdminData = {
       ...data,
       Timestamp: new Date().toISOString(),
-      'No Pendaftaran': `PPDB-${new Date().getFullYear()}-${String(mockData.length + 1).padStart(3, '0')}`,
+      'No Pendaftaran': `PPDB-${year}-${String(mockData.length + 1).padStart(3, '0')}`,
       Status: 'Proses'
     };
     mockData.push(newEntry);
@@ -160,12 +180,15 @@ export const getRegistrations = async (): Promise<AdminData[]> => {
   }
 };
 
-export const updateStatus = async (noPendaftaran: string, newStatus: string) => {
+export const updateStatus = async (noPendaftaran: string, newStatus: string, alasan?: string) => {
   if (!GAS_WEB_APP_URL) {
     await new Promise(resolve => setTimeout(resolve, 800));
     const index = mockData.findIndex(d => d['No Pendaftaran'] === noPendaftaran);
     if (index !== -1) {
       mockData[index].Status = newStatus as any;
+      if (alasan !== undefined) {
+        mockData[index]['Alasan Penolakan'] = alasan;
+      }
       return { status: "success" };
     }
     throw new Error("Data not found");
@@ -177,7 +200,8 @@ export const updateStatus = async (noPendaftaran: string, newStatus: string) => 
       body: JSON.stringify({
         action: "updateStatus",
         noPendaftaran,
-        newStatus
+        newStatus,
+        alasan
       }),
       headers: {
         "Content-Type": "text/plain;charset=utf-8",
@@ -195,12 +219,14 @@ export const checkStatus = async (noPendaftaran: string) => {
     await new Promise(resolve => setTimeout(resolve, 800));
     const student = mockData.find(d => d['No Pendaftaran'] === noPendaftaran);
     if (student) {
+      const namaKey = Object.keys(student).find(k => k.toLowerCase().includes('nama')) || 'Nama Lengkap';
       return { 
         status: "success", 
         data: {
           noPendaftaran: student['No Pendaftaran'],
-          namaLengkap: student['Nama Lengkap'] || 'Siswa',
-          status: student.Status
+          namaLengkap: student[namaKey] || 'Siswa',
+          status: student.Status,
+          alasanPenolakan: student['Alasan Penolakan']
         }
       };
     }

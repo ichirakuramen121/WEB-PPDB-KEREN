@@ -54,13 +54,21 @@ export default function AdminDashboard() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<AdminData | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings'>('dashboard');
-  const [settingsTab, setSettingsTab] = useState<'school' | 'form'>('school');
+  const [settingsTab, setSettingsTab] = useState<'school' | 'form' | 'surat'>('school');
   const itemsPerPage = 10;
   const navigate = useNavigate();
 
   // Settings State
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [localSettings, setLocalSettings] = useState(settings);
+
+  const getFieldValue = (item: any, fieldId: string) => {
+    const field = settings?.formFields?.find(f => f.id === fieldId);
+    if (field && item[field.label] !== undefined) {
+      return item[field.label];
+    }
+    return item[fieldId];
+  };
 
   useEffect(() => {
     if (settings) {
@@ -109,20 +117,42 @@ export default function AdminDashboard() {
 
   const handleUpdateStatus = async (noPendaftaran: string, newStatus: string) => {
     try {
+      let alasan = undefined;
+      
+      if (newStatus === 'Tidak Lulus') {
+        const { value: text, isConfirmed } = await Swal.fire({
+          title: 'Alasan Tidak Lulus',
+          input: 'textarea',
+          inputLabel: 'Berikan alasan mengapa pendaftar tidak lulus',
+          inputPlaceholder: 'Contoh: Usia belum mencukupi...',
+          showCancelButton: true,
+          confirmButtonText: 'Simpan',
+          cancelButtonText: 'Batal',
+          inputValidator: (value) => {
+            if (!value) {
+              return 'Alasan harus diisi!';
+            }
+          }
+        });
+        
+        if (!isConfirmed) return;
+        alasan = text;
+      }
+
       Swal.fire({
         title: 'Memproses...',
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
 
-      await updateStatus(noPendaftaran, newStatus);
+      await updateStatus(noPendaftaran, newStatus, alasan);
       
       setData(prev => prev.map(item => 
-        item['No Pendaftaran'] === noPendaftaran ? { ...item, Status: newStatus as any } : item
+        item['No Pendaftaran'] === noPendaftaran ? { ...item, Status: newStatus as any, 'Alasan Penolakan': alasan } : item
       ));
 
       if (selectedStudent && selectedStudent['No Pendaftaran'] === noPendaftaran) {
-        setSelectedStudent(prev => prev ? { ...prev, Status: newStatus as any } : null);
+        setSelectedStudent(prev => prev ? { ...prev, Status: newStatus as any, 'Alasan Penolakan': alasan } : null);
       }
 
       Swal.fire({
@@ -158,14 +188,23 @@ export default function AdminDashboard() {
   };
 
   const exportToExcel = () => {
-    const exportData = data.map(({ 'Foto Siswa': foto, 'Kartu Keluarga': kk, 'Akta Kelahiran': akta, ...rest }) => ({
-      ...rest,
-      'Tanggal Lahir': formatDate(rest['Tanggal Lahir']),
-      'Usia': calculateAge(rest['Tanggal Lahir']),
-      'Link Foto': foto || 'N/A',
-      'Link KK': kk || 'N/A',
-      'Link Akta': akta || 'N/A'
-    }));
+    const exportData = data.map(item => {
+      const formattedItem: any = { ...item };
+      
+      const tglLahir = getFieldValue(item, 'Tanggal Lahir');
+      if (tglLahir) {
+        formattedItem['Tanggal Lahir'] = formatDate(tglLahir);
+        formattedItem['Usia'] = calculateAge(tglLahir);
+      }
+      
+      Object.keys(formattedItem).forEach(key => {
+        if (typeof formattedItem[key] === 'string' && formattedItem[key].startsWith('data:')) {
+          formattedItem[key] = 'File Terlampir (Lihat di Dashboard)';
+        }
+      });
+      
+      return formattedItem;
+    });
     
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
@@ -202,22 +241,22 @@ export default function AdminDashboard() {
     doc.setFont("helvetica", "bold");
     doc.text("Nama Lengkap:", 20, startY + lineHeight);
     doc.setFont("helvetica", "normal");
-    doc.text(student['Nama Lengkap'] || '-', 70, startY + lineHeight);
+    doc.text(getFieldValue(student, 'Nama Lengkap') || '-', 70, startY + lineHeight);
 
     doc.setFont("helvetica", "bold");
     doc.text("NIK:", 20, startY + lineHeight * 2);
     doc.setFont("helvetica", "normal");
-    doc.text(student['NIK'] || '-', 70, startY + lineHeight * 2);
+    doc.text(getFieldValue(student, 'NIK') || '-', 70, startY + lineHeight * 2);
 
     doc.setFont("helvetica", "bold");
     doc.text("TTL:", 20, startY + lineHeight * 3);
     doc.setFont("helvetica", "normal");
-    doc.text(`${student['Tempat Lahir'] || '-'}, ${formatDate(student['Tanggal Lahir'])}`, 70, startY + lineHeight * 3);
+    doc.text(`${getFieldValue(student, 'Tempat Lahir') || '-'}, ${formatDate(getFieldValue(student, 'Tanggal Lahir'))}`, 70, startY + lineHeight * 3);
 
     doc.setFont("helvetica", "bold");
     doc.text("Usia:", 20, startY + lineHeight * 4);
     doc.setFont("helvetica", "normal");
-    doc.text(calculateAge(student['Tanggal Lahir']), 70, startY + lineHeight * 4);
+    doc.text(calculateAge(getFieldValue(student, 'Tanggal Lahir')), 70, startY + lineHeight * 4);
 
     doc.setFont("helvetica", "bold");
     doc.text("Status:", 20, startY + lineHeight * 5);
@@ -242,8 +281,8 @@ export default function AdminDashboard() {
 
   const filteredData = useMemo(() => {
     return data.filter(item => {
-      const nama = item['Nama Lengkap'] || '';
-      const nik = item['NIK'] || '';
+      const nama = getFieldValue(item, 'Nama Lengkap') || '';
+      const nik = getFieldValue(item, 'NIK') || '';
       const no = item['No Pendaftaran'] || '';
       
       const matchesSearch = nama.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -323,6 +362,22 @@ export default function AdminDashboard() {
 
         {activeTab === 'dashboard' && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            {/* Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              {[
+                { label: 'Total Pendaftar', value: data.length, color: 'bg-blue-500 text-white border-blue-600 shadow-md' },
+                { label: 'Lulus', value: data.filter(item => item.Status === 'Lulus').length, color: 'bg-green-500 text-white border-green-600 shadow-md' },
+                { label: 'Tidak Lulus', value: data.filter(item => item.Status === 'Tidak Lulus').length, color: 'bg-red-500 text-white border-red-600 shadow-md' },
+                { label: 'Laki-laki', value: data.filter(item => { const jk = getFieldValue(item, 'Jenis Kelamin'); return jk && jk.toLowerCase().includes('laki'); }).length, color: 'bg-indigo-500 text-white border-indigo-600 shadow-md' },
+                { label: 'Perempuan', value: data.filter(item => { const jk = getFieldValue(item, 'Jenis Kelamin'); return jk && jk.toLowerCase().includes('perempuan'); }).length, color: 'bg-pink-500 text-white border-pink-600 shadow-md' },
+              ].map((stat, idx) => (
+                <div key={idx} className={cn("p-4 rounded-xl border flex flex-col items-center justify-center text-center", stat.color)}>
+                  <span className="text-sm font-medium opacity-90 mb-1">{stat.label}</span>
+                  <span className="text-3xl font-bold">{stat.value}</span>
+                </div>
+              ))}
+            </div>
+
             {/* Filters & Search */}
             <div className={cn("rounded-xl shadow-sm border p-4 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center", isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200")}>
               <div className="relative w-full md:w-96">
@@ -359,7 +414,7 @@ export default function AdminDashboard() {
                 <button
                   onClick={fetchData}
                   disabled={isLoading}
-                  className="inline-flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap disabled:opacity-70"
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap disabled:opacity-70"
                 >
                   <RefreshCw size={16} className={cn(isLoading && "animate-spin")} /> Segarkan
                 </button>
@@ -376,14 +431,14 @@ export default function AdminDashboard() {
             <div className={cn("rounded-xl shadow-sm border overflow-hidden", isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200")}>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                  <thead className={isDarkMode ? "bg-slate-900/50" : "bg-slate-50"}>
+                  <thead className={isDarkMode ? "bg-slate-700 text-slate-200" : "bg-blue-50 text-blue-800"}>
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">No. Pendaftaran</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nama Lengkap</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Usia</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">NIK</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aksi</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">No. Pendaftaran</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Nama Lengkap</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Usia</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">NIK</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Status</th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className={cn("divide-y", isDarkMode ? "divide-slate-700" : "divide-slate-200")}>
@@ -414,14 +469,14 @@ export default function AdminDashboard() {
                             {item['No Pendaftaran']}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium">{item['Nama Lengkap'] || '-'}</div>
-                            <div className={cn("text-xs", isDarkMode ? "text-slate-400" : "text-slate-500")}>{item['Tempat Lahir'] || '-'}, {formatDate(item['Tanggal Lahir'])}</div>
+                            <div className="text-sm font-medium">{getFieldValue(item, 'Nama Lengkap') || '-'}</div>
+                            <div className={cn("text-xs", isDarkMode ? "text-slate-400" : "text-slate-500")}>{getFieldValue(item, 'Tempat Lahir') || '-'}, {formatDate(getFieldValue(item, 'Tanggal Lahir'))}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            {calculateAge(item['Tanggal Lahir'])}
+                            {calculateAge(getFieldValue(item, 'Tanggal Lahir'))}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
-                            {item['NIK'] || '-'}
+                            {getFieldValue(item, 'NIK') || '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getStatusBadge(item.Status)}
@@ -508,6 +563,17 @@ export default function AdminDashboard() {
                 >
                   Pengaturan Formulir
                 </button>
+                <button
+                  onClick={() => setSettingsTab('surat')}
+                  className={cn(
+                    "px-4 py-2 rounded-lg font-medium transition-colors",
+                    settingsTab === 'surat'
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
+                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700/50"
+                  )}
+                >
+                  Pengaturan Surat
+                </button>
               </div>
 
               <div className="space-y-6">
@@ -560,6 +626,16 @@ export default function AdminDashboard() {
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
                     </div>
+                    <div>
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tahun Pendaftaran</label>
+                      <input
+                        type="text"
+                        value={localSettings.tahunPendaftaran || ''}
+                        onChange={e => setLocalSettings({...localSettings, tahunPendaftaran: e.target.value})}
+                        placeholder="Contoh: 2024"
+                        className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                    </div>
                     <div className="md:col-span-2">
                       <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Deskripsi Sekolah</label>
                       <textarea
@@ -568,6 +644,180 @@ export default function AdminDashboard() {
                         rows={3}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>URL Gambar Header / Logo Sekolah</label>
+                      <input
+                        type="text"
+                        value={localSettings.logoSekolah || ''}
+                        onChange={e => setLocalSettings({...localSettings, logoSekolah: e.target.value})}
+                        placeholder="https://example.com/image.jpg"
+                        className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Gambar Header Beranda (Upload)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => setLocalSettings({...localSettings, gambarHeaderBeranda: reader.result as string});
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                      {localSettings.gambarHeaderBeranda && <img src={localSettings.gambarHeaderBeranda} alt="Header Beranda" className="mt-2 h-32 object-cover border rounded bg-white" />}
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Persyaratan Daftar Ulang</label>
+                      <textarea
+                        value={localSettings.persyaratanDaftarUlang || ''}
+                        onChange={e => setLocalSettings({...localSettings, persyaratanDaftarUlang: e.target.value})}
+                        rows={5}
+                        placeholder="1. Syarat pertama&#10;2. Syarat kedua"
+                        className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                    </div>
+                    <div>
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal Daftar Ulang</label>
+                      <input
+                        type="date"
+                        value={localSettings.tanggalDaftarUlang || ''}
+                        onChange={e => setLocalSettings({...localSettings, tanggalDaftarUlang: e.target.value})}
+                        className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                    </div>
+
+                  </div>
+                )}
+
+                {settingsTab === 'surat' && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold">Pengaturan Surat Kelulusan</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Nomor Surat</label>
+                        <input
+                          type="text"
+                          value={localSettings.nomorSurat || ''}
+                          onChange={e => setLocalSettings({...localSettings, nomorSurat: e.target.value})}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                          placeholder="Contoh: 421.2/001/SD/2026"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tempat Surat</label>
+                        <input
+                          type="text"
+                          value={localSettings.tempatSurat || ''}
+                          onChange={e => setLocalSettings({...localSettings, tempatSurat: e.target.value})}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                          placeholder="Contoh: Jakarta"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal Surat (Kosongkan untuk tanggal hari ini)</label>
+                        <input
+                          type="text"
+                          value={localSettings.tanggalSurat || ''}
+                          onChange={e => setLocalSettings({...localSettings, tanggalSurat: e.target.value})}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                          placeholder="Contoh: 25 Juli 2026"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Nama Kepala Sekolah</label>
+                        <input
+                          type="text"
+                          value={localSettings.namaKepalaSekolah || ''}
+                          onChange={e => setLocalSettings({...localSettings, namaKepalaSekolah: e.target.value})}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                          placeholder="Contoh: Drs. H. Ahmad, M.Pd."
+                        />
+                      </div>
+
+                      <div>
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>NIP Kepala Sekolah</label>
+                        <input
+                          type="text"
+                          value={localSettings.nipKepalaSekolah || ''}
+                          onChange={e => setLocalSettings({...localSettings, nipKepalaSekolah: e.target.value})}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                          placeholder="Contoh: 19700101 199512 1 001"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Kop Surat (Gambar)</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => setLocalSettings({...localSettings, kopSurat: reader.result as string});
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                        {localSettings.kopSurat && <img src={localSettings.kopSurat} alt="Kop Surat" className="mt-2 h-16 object-contain border rounded bg-white" />}
+                      </div>
+
+                      <div>
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanda Tangan Kepala Sekolah (Gambar)</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => setLocalSettings({...localSettings, tandaTanganKepalaSekolah: reader.result as string});
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                        {localSettings.tandaTanganKepalaSekolah && <img src={localSettings.tandaTanganKepalaSekolah} alt="Tanda Tangan" className="mt-2 h-16 object-contain border rounded bg-white" />}
+                      </div>
+
+                      <div>
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Stempel Sekolah (Gambar transparan disarankan)</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => setLocalSettings({...localSettings, stempelSekolah: reader.result as string});
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                        {localSettings.stempelSekolah && <img src={localSettings.stempelSekolah} alt="Stempel" className="mt-2 h-16 object-contain border rounded bg-white" />}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Catatan Tambahan / Pengumuman Lain</label>
+                        <textarea
+                          value={localSettings.catatanTambahan || ''}
+                          onChange={e => setLocalSettings({...localSettings, catatanTambahan: e.target.value})}
+                          rows={3}
+                          placeholder="Contoh: Harap membawa materai 10.000 saat daftar ulang."
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -738,24 +988,26 @@ export default function AdminDashboard() {
                         </div>
                         
                         {/* Dynamic Fields */}
-                        {settings?.formFields.filter(f => f.type !== 'file').map(field => (
+                        {settings?.formFields.filter(f => f.type !== 'file').map(field => {
+                          const value = getFieldValue(selectedStudent, field.id);
+                          return (
                           <React.Fragment key={field.id}>
                             <div className="grid grid-cols-3 gap-4">
                               <dt className="text-slate-500 dark:text-slate-400">{field.label}</dt>
                               <dd className="col-span-2 font-medium">
                                 {field.id === 'Tanggal Lahir' 
-                                  ? formatDate(selectedStudent[field.id]) 
-                                  : (selectedStudent[field.id] || '-')}
+                                  ? formatDate(value) 
+                                  : (value || '-')}
                               </dd>
                             </div>
                             {field.id === 'Tanggal Lahir' && (
                               <div className="grid grid-cols-3 gap-4">
                                 <dt className="text-slate-500 dark:text-slate-400">Usia</dt>
-                                <dd className="col-span-2 font-medium">{calculateAge(selectedStudent[field.id])}</dd>
+                                <dd className="col-span-2 font-medium">{calculateAge(value)}</dd>
                               </div>
                             )}
                           </React.Fragment>
-                        ))}
+                        )})}
                       </dl>
                     </div>
                     
@@ -778,7 +1030,7 @@ export default function AdminDashboard() {
                     <h3 className="text-lg font-semibold border-b pb-2 mb-4 dark:border-slate-700">Berkas Upload</h3>
                     <div className="space-y-4">
                       {settings?.formFields.filter(f => f.type === 'file').map(field => {
-                        const fileUrl = selectedStudent[field.id];
+                        const fileUrl = getFieldValue(selectedStudent, field.id);
                         return (
                           <div key={field.id} className={cn("p-4 rounded-xl border", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
                             <p className="text-sm font-medium mb-2">{field.label}</p>
