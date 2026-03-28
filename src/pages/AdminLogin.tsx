@@ -18,7 +18,7 @@ export default function AdminLogin() {
     try {
       const response = await loginAdmin(username, password);
       if (response.status === 'success') {
-        localStorage.setItem('isAdmin', 'true');
+        sessionStorage.setItem('isAdmin', 'true');
         navigate('/admin');
       } else {
         Swal.fire({

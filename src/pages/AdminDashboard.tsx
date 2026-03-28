@@ -77,7 +77,7 @@ export default function AdminDashboard() {
   }, [settings]);
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem('isAdmin');
+    const isAdmin = sessionStorage.getItem('isAdmin');
     if (!isAdmin) {
       navigate('/admin/login');
       return;
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
       cancelButtonText: 'Batal'
     }).then((result) => {
       if (result.isConfirmed) {
-        localStorage.removeItem('isAdmin');
+        sessionStorage.removeItem('isAdmin');
         navigate('/admin/login');
       }
     });
@@ -646,14 +646,21 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>URL Gambar Header / Logo Sekolah</label>
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Logo Sekolah (Upload)</label>
                       <input
-                        type="text"
-                        value={localSettings.logoSekolah || ''}
-                        onChange={e => setLocalSettings({...localSettings, logoSekolah: e.target.value})}
-                        placeholder="https://example.com/image.jpg"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => setLocalSettings({...localSettings, logoSekolah: reader.result as string});
+                            reader.readAsDataURL(file);
+                          }
+                        }}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
+                      {localSettings.logoSekolah && <img src={localSettings.logoSekolah} alt="Logo Sekolah" className="mt-2 h-16 object-contain border rounded bg-white p-1" />}
                     </div>
                     <div className="md:col-span-2">
                       <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Gambar Header Beranda (Upload)</label>

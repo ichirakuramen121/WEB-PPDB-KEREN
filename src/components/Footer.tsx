@@ -11,9 +11,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="bg-blue-600 p-2 rounded-lg text-white">
-                <GraduationCap size={24} />
-              </div>
+              {settings?.logoSekolah ? (
+                <img src={settings.logoSekolah} alt="Logo Sekolah" className="h-10 w-auto object-contain bg-white p-1 rounded" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="bg-blue-600 p-2 rounded-lg text-white">
+                  <GraduationCap size={24} />
+                </div>
+              )}
               <span className="font-bold text-xl tracking-tight text-white">
                 {settings?.namaSekolah || 'SDN Harapan Bangsa'}
               </span>
