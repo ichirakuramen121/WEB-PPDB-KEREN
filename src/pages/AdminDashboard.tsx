@@ -10,6 +10,33 @@ import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 
+const compressImage = (file: File, maxWidth = 800): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+    };
+  });
+};
+
 const formatDate = (dateString: string) => {
   if (!dateString) return '-';
   const date = new Date(dateString);
@@ -650,12 +677,11 @@ export default function AdminDashboard() {
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => setLocalSettings({...localSettings, logoSekolah: reader.result as string});
-                            reader.readAsDataURL(file);
+                            const compressed = await compressImage(file, 400);
+                            setLocalSettings({...localSettings, logoSekolah: compressed});
                           }
                         }}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
@@ -667,12 +693,11 @@ export default function AdminDashboard() {
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => setLocalSettings({...localSettings, gambarHeaderBeranda: reader.result as string});
-                            reader.readAsDataURL(file);
+                            const compressed = await compressImage(file, 1200);
+                            setLocalSettings({...localSettings, gambarHeaderBeranda: compressed});
                           }
                         }}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
@@ -766,12 +791,11 @@ export default function AdminDashboard() {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => setLocalSettings({...localSettings, kopSurat: reader.result as string});
-                              reader.readAsDataURL(file);
+                              const compressed = await compressImage(file, 1200);
+                              setLocalSettings({...localSettings, kopSurat: compressed});
                             }
                           }}
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
@@ -784,12 +808,11 @@ export default function AdminDashboard() {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => setLocalSettings({...localSettings, tandaTanganKepalaSekolah: reader.result as string});
-                              reader.readAsDataURL(file);
+                              const compressed = await compressImage(file, 400);
+                              setLocalSettings({...localSettings, tandaTanganKepalaSekolah: compressed});
                             }
                           }}
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
@@ -802,12 +825,11 @@ export default function AdminDashboard() {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => setLocalSettings({...localSettings, stempelSekolah: reader.result as string});
-                              reader.readAsDataURL(file);
+                              const compressed = await compressImage(file, 400);
+                              setLocalSettings({...localSettings, stempelSekolah: compressed});
                             }
                           }}
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
@@ -854,7 +876,7 @@ export default function AdminDashboard() {
                             value={field.id}
                             onChange={e => {
                               const newFields = [...localSettings.formFields];
-                              newFields[index].id = e.target.value;
+                              newFields[index] = { ...newFields[index], id: e.target.value };
                               setLocalSettings({...localSettings, formFields: newFields});
                             }}
                             className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600" : "bg-white border-slate-300")}
@@ -867,7 +889,7 @@ export default function AdminDashboard() {
                             value={field.label}
                             onChange={e => {
                               const newFields = [...localSettings.formFields];
-                              newFields[index].label = e.target.value;
+                              newFields[index] = { ...newFields[index], label: e.target.value };
                               setLocalSettings({...localSettings, formFields: newFields});
                             }}
                             className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600" : "bg-white border-slate-300")}
@@ -879,7 +901,7 @@ export default function AdminDashboard() {
                             value={field.type}
                             onChange={e => {
                               const newFields = [...localSettings.formFields];
-                              newFields[index].type = e.target.value as any;
+                              newFields[index] = { ...newFields[index], type: e.target.value as any };
                               setLocalSettings({...localSettings, formFields: newFields});
                             }}
                             className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600" : "bg-white border-slate-300")}
@@ -899,7 +921,7 @@ export default function AdminDashboard() {
                               checked={field.required}
                               onChange={e => {
                                 const newFields = [...localSettings.formFields];
-                                newFields[index].required = e.target.checked;
+                                newFields[index] = { ...newFields[index], required: e.target.checked };
                                 setLocalSettings({...localSettings, formFields: newFields});
                               }}
                               className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
@@ -927,7 +949,7 @@ export default function AdminDashboard() {
                               value={field.options?.join(', ') || ''}
                               onChange={e => {
                                 const newFields = [...localSettings.formFields];
-                                newFields[index].options = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                                newFields[index] = { ...newFields[index], options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) };
                                 setLocalSettings({...localSettings, formFields: newFields});
                               }}
                               placeholder="Laki-laki, Perempuan"
