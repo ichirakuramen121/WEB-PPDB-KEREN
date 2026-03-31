@@ -1,7 +1,7 @@
 // Service to interact with Google Apps Script Backend
 
 // To use the real backend, replace this URL with your deployed Google Apps Script Web App URL
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby_fg0Hu34NjMtOq5zeF0ZyMvCA41JFnw75RhNQyUKRotkUwIceet8Xu-vZ2ddDaaeh/exec"; 
+const GAS_WEB_APP_URL = ""; 
 
 export interface FormField {
   id: string;
@@ -34,6 +34,7 @@ export interface AppSettings {
   nipKepalaSekolah?: string;
   catatanTambahan?: string;
   gambarHeaderBeranda?: string;
+  koordinatSekolah?: string;
 }
 
 export interface RegistrationData {
@@ -69,6 +70,7 @@ const getInitialMockSettings = (): AppSettings => {
     tanggalPengumuman: "",
     logoSekolah: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop",
     tahunPendaftaran: new Date().getFullYear().toString(),
+    koordinatSekolah: "-6.200000, 106.816666", // Default to Jakarta
     formFields: [
       { id: "Nama Lengkap", label: "Nama Lengkap", type: "text", required: true },
       { id: "NIK", label: "NIK", type: "text", required: true },

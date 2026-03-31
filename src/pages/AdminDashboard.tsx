@@ -224,6 +224,10 @@ export default function AdminDashboard() {
         formattedItem['Usia'] = calculateAge(tglLahir);
       }
       
+      if (item['Koordinat Lokasi']) {
+        formattedItem['Link Maps'] = `https://www.google.com/maps/search/?api=1&query=${item['Koordinat Lokasi']}`;
+      }
+      
       Object.keys(formattedItem).forEach(key => {
         if (typeof formattedItem[key] === 'string' && formattedItem[key].startsWith('data:')) {
           formattedItem[key] = 'File Terlampir (Lihat di Dashboard)';
@@ -463,6 +467,7 @@ export default function AdminDashboard() {
                       <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">No. Pendaftaran</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Nama Lengkap</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Usia</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Jarak</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">NIK</th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Status</th>
                       <th scope="col" className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider">Aksi</th>
@@ -471,14 +476,14 @@ export default function AdminDashboard() {
                   <tbody className={cn("divide-y", isDarkMode ? "divide-slate-700" : "divide-slate-200")}>
                     {isLoading ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center">
+                        <td colSpan={7} className="px-6 py-12 text-center">
                           <Loader2 className="animate-spin h-8 w-8 mx-auto text-blue-500 mb-4" />
                           <p className={isDarkMode ? "text-slate-400" : "text-slate-500"}>Memuat data...</p>
                         </td>
                       </tr>
                     ) : currentData.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center">
+                        <td colSpan={7} className="px-6 py-12 text-center">
                           <div className="mx-auto h-12 w-12 text-slate-400 mb-4"><FileText size={48} /></div>
                           <p className={isDarkMode ? "text-slate-400" : "text-slate-500"}>Tidak ada data ditemukan</p>
                         </td>
@@ -501,6 +506,9 @@ export default function AdminDashboard() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             {calculateAge(getFieldValue(item, 'Tanggal Lahir'))}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {item['Jarak ke Sekolah (km)'] ? `${item['Jarak ke Sekolah (km)']} km` : '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
                             {getFieldValue(item, 'NIK') || '-'}
@@ -645,6 +653,17 @@ export default function AdminDashboard() {
                         rows={2}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Koordinat Sekolah (Latitude, Longitude)</label>
+                      <input
+                        type="text"
+                        value={localSettings.koordinatSekolah || ''}
+                        onChange={e => setLocalSettings({...localSettings, koordinatSekolah: e.target.value})}
+                        placeholder="Contoh: -6.200000, 106.816666"
+                        className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                      <p className="text-xs text-slate-500 mt-1">Gunakan format "Latitude, Longitude" (contoh: -6.200000, 106.816666). Digunakan untuk menghitung jarak rumah pendaftar ke sekolah.</p>
                     </div>
                     <div>
                       <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Telepon</label>
@@ -1065,6 +1084,29 @@ export default function AdminDashboard() {
                             )}
                           </React.Fragment>
                         )})}
+                        
+                        {selectedStudent['Koordinat Lokasi'] && (
+                          <div className="grid grid-cols-3 gap-4 mt-2">
+                            <dt className="text-slate-500 dark:text-slate-400">Koordinat Lokasi</dt>
+                            <dd className="col-span-2 font-medium">
+                              <a 
+                                href={`https://www.google.com/maps/search/?api=1&query=${selectedStudent['Koordinat Lokasi']}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                {selectedStudent['Koordinat Lokasi']}
+                              </a>
+                            </dd>
+                          </div>
+                        )}
+                        
+                        {selectedStudent['Jarak ke Sekolah (km)'] && (
+                          <div className="grid grid-cols-3 gap-4">
+                            <dt className="text-slate-500 dark:text-slate-400">Jarak ke Sekolah</dt>
+                            <dd className="col-span-2 font-medium text-blue-700">{selectedStudent['Jarak ke Sekolah (km)']} km</dd>
+                          </div>
+                        )}
                       </dl>
                     </div>
                     

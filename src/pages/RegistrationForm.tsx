@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, AlertCircle, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, AlertCircle, FileText, Image as ImageIcon, Loader2, MapPin } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
 import { submitRegistration, RegistrationData } from '../services/api';
 import { useSettings } from '../context/SettingsContext';
 import jsPDF from 'jspdf';
+import MapPicker from '../components/MapPicker';
+import { calculateDistance } from '../utils/distance';
 
 export default function RegistrationForm() {
   const { settings } = useSettings();
@@ -15,6 +17,8 @@ export default function RegistrationForm() {
   const [isAgreed, setIsAgreed] = useState(false);
   const [formData, setFormData] = useState<RegistrationData>({});
   const [previews, setPreviews] = useState<Record<string, string>>({});
+  const [mapLocation, setMapLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -45,6 +49,20 @@ export default function RegistrationForm() {
       setPreviews(prev => ({ ...prev, [fieldId]: base64String }));
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setMapLocation({ lat, lng });
+    setFormData(prev => ({ ...prev, 'Koordinat Lokasi': `${lat}, ${lng}` }));
+    
+    if (settings?.koordinatSekolah) {
+      const [schoolLat, schoolLng] = settings.koordinatSekolah.split(',').map(s => parseFloat(s.trim()));
+      if (!isNaN(schoolLat) && !isNaN(schoolLng)) {
+        const dist = calculateDistance(lat, lng, schoolLat, schoolLng);
+        setDistance(dist);
+        setFormData(prev => ({ ...prev, 'Jarak ke Sekolah (km)': dist.toFixed(2) }));
+      }
+    }
   };
 
   const printProof = (noPendaftaran: string) => {
@@ -130,6 +148,16 @@ export default function RegistrationForm() {
         icon: 'warning',
         title: 'Berkas Belum Lengkap',
         text: `Mohon unggah dokumen: ${missingFiles.map(f => f.label).join(', ')}`,
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    if (!mapLocation) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Lokasi Belum Ditandai',
+        text: 'Mohon tandai lokasi rumah Anda di peta.',
         confirmButtonColor: '#3b82f6'
       });
       return;
@@ -305,6 +333,24 @@ export default function RegistrationForm() {
                       {renderField(field)}
                     </div>
                   ))}
+                  
+                  <div className="col-span-1 md:col-span-2 mt-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+                      <MapPin size={18} className="text-blue-600" />
+                      Tandai Lokasi Rumah di Peta
+                    </label>
+                    <p className="text-xs text-slate-500 mb-3">
+                      Klik pada peta untuk menandai lokasi rumah Anda. Jarak ke sekolah akan dihitung secara otomatis.
+                    </p>
+                    <MapPicker onLocationSelect={handleLocationSelect} />
+                    
+                    {distance !== null && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
+                        <span className="text-sm text-slate-700">Jarak ke Sekolah:</span>
+                        <span className="font-bold text-blue-700">{distance.toFixed(2)} km</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
