@@ -193,7 +193,19 @@ export default function CheckStatus() {
   };
 
   const getStatusDisplay = (status: string, data?: any) => {
-    switch (status) {
+    let displayStatus = status;
+    if (settings?.tanggalPengumuman) {
+      const pengumumanDate = new Date(settings.tanggalPengumuman);
+      const now = new Date();
+      // Reset hours to compare just dates, or compare exact time. Let's compare exact time or start of day.
+      // Usually it's start of day.
+      pengumumanDate.setHours(0, 0, 0, 0);
+      if (now < pengumumanDate) {
+        displayStatus = 'Proses';
+      }
+    }
+
+    switch (displayStatus) {
       case 'Lulus':
         return (
           <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
@@ -238,13 +250,18 @@ export default function CheckStatus() {
           </div>
         );
       default:
+        const isBeforePengumuman = settings?.tanggalPengumuman && new Date() < new Date(new Date(settings.tanggalPengumuman).setHours(0, 0, 0, 0));
         return (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
             <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
               <Clock className="text-amber-600" size={32} />
             </div>
             <h3 className="text-2xl font-bold text-amber-800 mb-2">Data Sedang Diproses</h3>
-            <p className="text-amber-700">Berkas Anda sedang dalam tahap verifikasi panitia.</p>
+            <p className="text-amber-700">
+              {isBeforePengumuman 
+                ? `Pengumuman kelulusan akan dibuka pada tanggal ${new Date(settings.tanggalPengumuman!).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}.` 
+                : 'Berkas Anda sedang dalam tahap verifikasi panitia.'}
+            </p>
           </div>
         );
     }

@@ -81,7 +81,7 @@ export default function AdminDashboard() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<AdminData | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'settings'>('dashboard');
-  const [settingsTab, setSettingsTab] = useState<'school' | 'form' | 'surat'>('school');
+  const [settingsTab, setSettingsTab] = useState<'school' | 'form' | 'surat' | 'daftar-ulang'>('school');
   const itemsPerPage = 10;
   const navigate = useNavigate();
 
@@ -601,6 +601,17 @@ export default function AdminDashboard() {
                 >
                   Pengaturan Surat
                 </button>
+                <button
+                  onClick={() => setSettingsTab('daftar-ulang')}
+                  className={cn(
+                    "px-4 py-2 rounded-lg font-medium transition-colors",
+                    settingsTab === 'daftar-ulang'
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
+                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700/50"
+                  )}
+                >
+                  Pengaturan Daftar Ulang
+                </button>
               </div>
 
               <div className="space-y-6">
@@ -704,26 +715,43 @@ export default function AdminDashboard() {
                       />
                       {localSettings.gambarHeaderBeranda && <img src={localSettings.gambarHeaderBeranda} alt="Header Beranda" className="mt-2 h-32 object-cover border rounded bg-white" />}
                     </div>
-                    <div className="md:col-span-2">
-                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Persyaratan Daftar Ulang</label>
-                      <textarea
-                        value={localSettings.persyaratanDaftarUlang || ''}
-                        onChange={e => setLocalSettings({...localSettings, persyaratanDaftarUlang: e.target.value})}
-                        rows={5}
-                        placeholder="1. Syarat pertama&#10;2. Syarat kedua"
-                        className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
-                      />
-                    </div>
                     <div>
-                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal Daftar Ulang</label>
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal Pengumuman Kelulusan</label>
                       <input
                         type="date"
-                        value={localSettings.tanggalDaftarUlang || ''}
-                        onChange={e => setLocalSettings({...localSettings, tanggalDaftarUlang: e.target.value})}
+                        value={localSettings.tanggalPengumuman || ''}
+                        onChange={e => setLocalSettings({...localSettings, tanggalPengumuman: e.target.value})}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
+                      <p className="text-xs text-slate-500 mt-1">Sebelum tanggal ini, pendaftar akan melihat status "Proses".</p>
                     </div>
+                  </div>
+                )}
 
+                {settingsTab === 'daftar-ulang' && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold">Pengaturan Daftar Ulang</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal Daftar Ulang</label>
+                        <input
+                          type="date"
+                          value={localSettings.tanggalDaftarUlang || ''}
+                          onChange={e => setLocalSettings({...localSettings, tanggalDaftarUlang: e.target.value})}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Persyaratan Daftar Ulang</label>
+                        <textarea
+                          value={localSettings.persyaratanDaftarUlang || ''}
+                          onChange={e => setLocalSettings({...localSettings, persyaratanDaftarUlang: e.target.value})}
+                          rows={5}
+                          placeholder="1. Syarat pertama&#10;2. Syarat kedua"
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
 
