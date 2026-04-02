@@ -11,6 +11,13 @@ export interface FormField {
   required: boolean;
 }
 
+export interface PanduanDokumen {
+  id: string;
+  icon: 'FileDigit' | 'FileBadge' | 'FileImage' | 'FileText';
+  title: string;
+  description: string;
+}
+
 export interface AppSettings {
   namaSekolah: string;
   alamat: string;
@@ -35,6 +42,15 @@ export interface AppSettings {
   catatanTambahan?: string;
   gambarHeaderBeranda?: string;
   koordinatSekolah?: string;
+  sambutanKepalaSekolah?: string;
+  fotoKepalaSekolah?: string;
+  visiSekolah?: string;
+  misiSekolah?: string;
+  panduanJudul?: string;
+  panduanDeskripsi?: string;
+  panduanPeringatan?: string;
+  panduanDokumen?: PanduanDokumen[];
+  panduanAlur?: string[];
 }
 
 export interface RegistrationData {
@@ -71,6 +87,10 @@ const getInitialMockSettings = (): AppSettings => {
     logoSekolah: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop",
     tahunPendaftaran: new Date().getFullYear().toString(),
     koordinatSekolah: "-6.200000, 106.816666", // Default to Jakarta
+    sambutanKepalaSekolah: "Selamat datang di website resmi PPDB SDN Harapan Bangsa. Kami berkomitmen untuk memberikan pelayanan pendidikan terbaik bagi putra-putri Anda. Mari bergabung bersama kami untuk mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan berprestasi.",
+    fotoKepalaSekolah: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&auto=format&fit=crop",
+    visiSekolah: "Menjadi sekolah dasar unggulan yang menghasilkan lulusan berakhlak mulia, cerdas, terampil, dan berwawasan lingkungan.",
+    misiSekolah: "1. Menyelenggarakan pembelajaran yang aktif, inovatif, kreatif, efektif, dan menyenangkan (PAIKEM).\n2. Menanamkan nilai-nilai agama dan budi pekerti luhur dalam kehidupan sehari-hari.\n3. Mengembangkan potensi, bakat, dan minat siswa melalui kegiatan ekstrakurikuler.\n4. Menciptakan lingkungan sekolah yang bersih, sehat, dan asri.",
     formFields: [
       { id: "Nama Lengkap", label: "Nama Lengkap", type: "text", required: true },
       { id: "NIK", label: "NIK", type: "text", required: true },
@@ -83,6 +103,23 @@ const getInitialMockSettings = (): AppSettings => {
       { id: "Foto Siswa", label: "Pas Foto 3x4", type: "file", required: true },
       { id: "Kartu Keluarga", label: "Kartu Keluarga", type: "file", required: true },
       { id: "Akta Kelahiran", label: "Akta Kelahiran", type: "file", required: true }
+    ],
+    panduanJudul: "Panduan Pendaftaran PPDB",
+    panduanDeskripsi: "Persiapkan dokumen berikut sebelum mulai mengisi formulir pendaftaran.",
+    panduanPeringatan: "Pastikan semua dokumen di-scan atau difoto dengan jelas dan dapat terbaca. Format file yang disarankan adalah JPG, PNG, atau PDF dengan ukuran maksimal 2MB per file.",
+    panduanDokumen: [
+      { id: "1", icon: "FileDigit", title: "Kartu Keluarga (KK)", description: "Asli atau fotokopi yang dilegalisir. Pastikan NIK dan nama calon siswa tercantum dengan benar." },
+      { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Dokumen asli atau fotokopi legalisir untuk verifikasi usia dan data diri calon siswa." },
+      { id: "3", icon: "FileImage", title: "Pas Foto Terbaru", description: "Pas foto berwarna ukuran 3x4 dengan latar belakang merah atau biru." },
+      { id: "4", icon: "FileText", title: "Ijazah / SKHUN (Jika Ada)", description: "Surat Keterangan Lulus atau Ijazah dari jenjang pendidikan sebelumnya (TK/PAUD)." }
+    ],
+    panduanAlur: [
+      "Siapkan seluruh dokumen persyaratan dalam bentuk file digital (foto/scan).",
+      "Klik tombol 'Mulai Pendaftaran' di bawah atau menu 'Daftar' di navigasi.",
+      "Isi seluruh kolom formulir dengan data yang valid dan sesuai dengan dokumen asli.",
+      "Tandai lokasi rumah Anda di peta yang disediakan untuk perhitungan jarak.",
+      "Unggah dokumen persyaratan pada kolom yang tersedia.",
+      "Kirim formulir dan simpan Nomor Pendaftaran Anda untuk mengecek status kelulusan."
     ]
   };
 };

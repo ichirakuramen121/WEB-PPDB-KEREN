@@ -161,19 +161,18 @@ export default function Home() {
                 Sambutan Kepala Sekolah
               </h2>
               <div className="prose prose-lg text-slate-600">
-                <p className="mb-4">
-                  "Selamat datang di sistem Penerimaan Peserta Didik Baru (PPDB) Online SDN Harapan Bangsa. Kami bangga dapat menghadirkan layanan pendaftaran yang mudah, transparan, dan akuntabel."
-                </p>
-                <p className="mb-6">
-                  Pendidikan dasar adalah pondasi terpenting bagi masa depan anak. Kami berkomitmen untuk tidak hanya mentransfer ilmu, tetapi juga membentuk karakter, menanamkan nilai moral, dan menggali potensi unik setiap siswa.
-                </p>
+                {settings?.sambutanKepalaSekolah?.split('\n').map((paragraph, idx) => (
+                  <p key={idx} className="mb-4">
+                    {paragraph}
+                  </p>
+                ))}
                 <div className="flex items-center gap-4 mt-8">
                   <div className="w-16 h-16 rounded-full bg-slate-200 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=256&auto=format&fit=crop" alt="Kepala Sekolah" className="w-full h-full object-cover" />
+                    <img src={settings?.fotoKepalaSekolah || "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=256&auto=format&fit=crop"} alt="Kepala Sekolah" className="w-full h-full object-cover" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900">Dr. Budi Santoso, M.Pd.</h4>
-                    <p className="text-sm text-slate-500">Kepala Sekolah SDN Harapan Bangsa</p>
+                    <h4 className="font-bold text-slate-900">{settings?.namaKepalaSekolah || 'Kepala Sekolah'}</h4>
+                    <p className="text-sm text-slate-500">Kepala Sekolah {settings?.namaSekolah}</p>
                   </div>
                 </div>
               </div>
@@ -194,22 +193,17 @@ export default function Home() {
               <div className="mb-8">
                 <h4 className="text-lg font-semibold text-slate-800 mb-3">Visi</h4>
                 <p className="text-slate-600 italic bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  "Terwujudnya peserta didik yang religius, cerdas, terampil, mandiri, dan berwawasan global."
+                  "{settings?.visiSekolah || 'Visi sekolah belum diatur.'}"
                 </p>
               </div>
               
               <div>
                 <h4 className="text-lg font-semibold text-slate-800 mb-3">Misi</h4>
                 <ul className="space-y-3">
-                  {[
-                    "Menanamkan keimanan dan ketakwaan melalui pengamalan ajaran agama.",
-                    "Mengoptimalkan proses pembelajaran dan bimbingan.",
-                    "Mengembangkan pengetahuan di bidang IPTEK, bahasa, olahraga dan seni budaya.",
-                    "Menjalin kerjasama yang harmonis antar warga sekolah dan lingkungan."
-                  ].map((misi, idx) => (
+                  {(settings?.misiSekolah ? settings.misiSekolah.split('\n') : []).map((misi, idx) => (
                     <li key={idx} className="flex items-start gap-3 text-slate-600">
                       <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={20} />
-                      <span>{misi}</span>
+                      <span>{misi.replace(/^\d+\.\s*/, '')}</span>
                     </li>
                   ))}
                 </ul>

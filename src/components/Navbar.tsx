@@ -12,6 +12,7 @@ export default function Navbar() {
 
   const links = [
     { name: 'Beranda', path: '/' },
+    { name: 'Panduan', path: '/panduan' },
     { name: 'Pendaftaran', path: '/daftar' },
     { name: 'Cek Kelulusan', path: '/cek-kelulusan' },
     { name: 'Admin', path: '/admin' },
