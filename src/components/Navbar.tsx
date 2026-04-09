@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { GraduationCap, Menu, X } from 'lucide-react';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useSettings } from '../context/SettingsContext';
 

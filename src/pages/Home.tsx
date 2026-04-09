@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Users, Trophy, ChevronRight, CheckCircle2, Calendar, FileText, CheckSquare, AlertCircle } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';

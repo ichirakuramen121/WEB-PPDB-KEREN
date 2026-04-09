@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Search, Filter, Download, Printer, CheckCircle, XCircle, Clock, FileText, Moon, Sun, Loader2, LogOut, Eye, X, Settings, LayoutDashboard, RefreshCw } from 'lucide-react';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';

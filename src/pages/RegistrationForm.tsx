@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Upload, AlertCircle, FileText, Image as ImageIcon, Loader2, MapPin } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';

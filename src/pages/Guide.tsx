@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { FileText, CheckCircle2, AlertCircle, ArrowRight, FileImage, FileBadge, FileDigit } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
