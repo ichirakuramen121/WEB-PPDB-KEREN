@@ -66,15 +66,7 @@ export interface AdminData extends RegistrationData {
 
 // Mock data for preview if GAS URL is not set
 const getInitialMockSettings = (): AppSettings => {
-  const stored = localStorage.getItem('mockSettings');
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch (e) {
-      console.error("Failed to parse mock settings from localStorage", e);
-    }
-  }
-  return {
+  const defaultSettings: AppSettings = {
     namaSekolah: "SDN Harapan Bangsa",
     alamat: "Jl. Pendidikan No. 123, Kota Pelajar, Indonesia 12345",
     telepon: "(021) 1234-5678",
@@ -122,6 +114,17 @@ const getInitialMockSettings = (): AppSettings => {
       "Kirim formulir dan simpan Nomor Pendaftaran Anda untuk mengecek status kelulusan."
     ]
   };
+
+  const stored = localStorage.getItem('mockSettings');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      return { ...defaultSettings, ...parsed }; // Merge default settings with parsed local settings
+    } catch (e) {
+      console.error("Failed to parse mock settings from localStorage", e);
+    }
+  }
+  return defaultSettings;
 };
 
 let mockSettings: AppSettings = getInitialMockSettings();
