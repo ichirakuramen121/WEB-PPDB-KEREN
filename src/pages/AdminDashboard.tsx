@@ -47,11 +47,18 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`;
 };
 
-const calculateAge = (dateString: string) => {
+const calculateAge = (dateString: string, cutoffDateString?: string) => {
   if (!dateString) return '-';
   const birthDate = new Date(dateString);
   if (isNaN(birthDate.getTime())) return '-';
-  const today = new Date();
+  
+  let today = new Date();
+  if (cutoffDateString) {
+    const cutoff = new Date(cutoffDateString);
+    if (!isNaN(cutoff.getTime())) {
+      today = cutoff;
+    }
+  }
   
   let years = today.getFullYear() - birthDate.getFullYear();
   let months = today.getMonth() - birthDate.getMonth();
@@ -221,7 +228,7 @@ export default function AdminDashboard() {
       const tglLahir = getFieldValue(item, 'Tanggal Lahir');
       if (tglLahir) {
         formattedItem['Tanggal Lahir'] = formatDate(tglLahir);
-        formattedItem['Usia'] = calculateAge(tglLahir);
+        formattedItem['Usia'] = calculateAge(tglLahir, settings?.tanggalCutoffUsia);
       }
       
       if (item['Koordinat Lokasi']) {
@@ -287,7 +294,7 @@ export default function AdminDashboard() {
     doc.setFont("helvetica", "bold");
     doc.text("Usia:", 20, startY + lineHeight * 4);
     doc.setFont("helvetica", "normal");
-    doc.text(calculateAge(getFieldValue(student, 'Tanggal Lahir')), 70, startY + lineHeight * 4);
+    doc.text(calculateAge(getFieldValue(student, 'Tanggal Lahir'), settings?.tanggalCutoffUsia), 70, startY + lineHeight * 4);
 
     doc.setFont("helvetica", "bold");
     doc.text("Status:", 20, startY + lineHeight * 5);
@@ -505,7 +512,7 @@ export default function AdminDashboard() {
                             <div className={cn("text-xs", isDarkMode ? "text-slate-400" : "text-slate-500")}>{getFieldValue(item, 'Tempat Lahir') || '-'}, {formatDate(getFieldValue(item, 'Tanggal Lahir'))}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            {calculateAge(getFieldValue(item, 'Tanggal Lahir'))}
+                            {calculateAge(getFieldValue(item, 'Tanggal Lahir'), settings?.tanggalCutoffUsia)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             {item['Jarak ke Sekolah (km)'] ? `${item['Jarak ke Sekolah (km)']} km` : '-'}
@@ -686,6 +693,16 @@ export default function AdminDashboard() {
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
                       <p className="text-xs text-slate-500 mt-1">Gunakan format "Latitude, Longitude" (contoh: -6.200000, 106.816666). Digunakan untuk menghitung jarak rumah pendaftar ke sekolah.</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal Cutoff Usia</label>
+                      <input
+                        type="date"
+                        value={localSettings.tanggalCutoffUsia || ''}
+                        onChange={e => setLocalSettings({...localSettings, tanggalCutoffUsia: e.target.value})}
+                        className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                      <p className="text-xs text-slate-500 mt-1">Tanggal yang digunakan sebagai acuan untuk menghitung usia pendaftar (contoh: 1 Juli tahun berjalan). Jika dikosongkan, menggunakan tanggal saat pengisian pendaftaran.</p>
                     </div>
                     <div>
                       <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Telepon</label>
@@ -1325,7 +1342,7 @@ export default function AdminDashboard() {
                             {field.id === 'Tanggal Lahir' && (
                               <div className="grid grid-cols-3 gap-4">
                                 <dt className="text-slate-500 dark:text-slate-400">Usia</dt>
-                                <dd className="col-span-2 font-medium">{calculateAge(value)}</dd>
+                                <dd className="col-span-2 font-medium">{calculateAge(value, settings?.tanggalCutoffUsia)}</dd>
                               </div>
                             )}
                           </React.Fragment>

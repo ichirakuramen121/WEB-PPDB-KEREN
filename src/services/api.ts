@@ -42,6 +42,7 @@ export interface AppSettings {
   catatanTambahan?: string;
   gambarHeaderBeranda?: string;
   koordinatSekolah?: string;
+  tanggalCutoffUsia?: string;
   sambutanKepalaSekolah?: string;
   fotoKepalaSekolah?: string;
   visiSekolah?: string;
@@ -79,6 +80,7 @@ const getInitialMockSettings = (): AppSettings => {
     logoSekolah: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop",
     tahunPendaftaran: new Date().getFullYear().toString(),
     koordinatSekolah: "-6.200000, 106.816666", // Default to Jakarta
+    tanggalCutoffUsia: "", // Tanggal ditetapkan cutoff usia
     sambutanKepalaSekolah: "Selamat datang di website resmi PPDB SDN Harapan Bangsa. Kami berkomitmen untuk memberikan pelayanan pendidikan terbaik bagi putra-putri Anda. Mari bergabung bersama kami untuk mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan berprestasi.",
     fotoKepalaSekolah: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&auto=format&fit=crop",
     visiSekolah: "Menjadi sekolah dasar unggulan yang menghasilkan lulusan berakhlak mulia, cerdas, terampil, dan berwawasan lingkungan.",
