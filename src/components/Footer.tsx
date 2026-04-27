@@ -23,7 +23,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-md">
-              {settings?.deskripsiSekolah || 'Mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan siap menghadapi tantangan masa depan dengan pendidikan berkualitas.'}
+              {settings?.deskripsi || 'Mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan siap menghadapi tantangan masa depan dengan pendidikan berkualitas.'}
             </p>
           </div>
           
@@ -41,15 +41,15 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-blue-500 shrink-0 mt-0.5" />
-                <span>{settings?.alamatSekolah || 'Jl. Pendidikan No. 123, Kota Pelajar, Indonesia 12345'}</span>
+                <span>{settings?.alamat || 'Jl. Pendidikan No. 123, Kota Pelajar, Indonesia 12345'}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={18} className="text-blue-500 shrink-0" />
-                <span>{settings?.teleponSekolah || '(021) 1234-5678'}</span>
+                <span>{settings?.telepon || '(021) 1234-5678'}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-blue-500 shrink-0" />
-                <span>{settings?.emailSekolah || 'info@sdnharapanbangsa.sch.id'}</span>
+                <span>{settings?.email || 'info@sdnharapanbangsa.sch.id'}</span>
               </li>
             </ul>
           </div>
