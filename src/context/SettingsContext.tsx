@@ -10,14 +10,22 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [settings, setSettings] = useState<AppSettings | null>(() => {
+    const cached = localStorage.getItem('app_settings_cache');
+    return cached ? JSON.parse(cached) : null;
+  });
+  const [isLoading, setIsLoading] = useState(!settings);
 
   const fetchSettings = async () => {
-    setIsLoading(true);
+    // Only set loading if we don't have cached data
+    if (!settings) {
+      setIsLoading(true);
+    }
+    
     try {
       const data = await getSettings();
       setSettings(data);
+      localStorage.setItem('app_settings_cache', JSON.stringify(data));
     } catch (error) {
       console.error("Failed to fetch settings", error);
     } finally {

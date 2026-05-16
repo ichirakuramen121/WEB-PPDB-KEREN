@@ -13,6 +13,7 @@ import RegistrationForm from './pages/RegistrationForm';
 import AdminDashboard from './pages/AdminDashboard';
 import CheckStatus from './pages/CheckStatus';
 import AdminLogin from './pages/AdminLogin';
+import { useSettings } from './context/SettingsContext';
 
 function RouteHandler() {
   const location = useLocation();
@@ -30,6 +31,17 @@ function RouteHandler() {
 }
 
 export default function App() {
+  const { isLoading } = useSettings();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 font-sans">
+        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <p className="mt-4 text-slate-500 font-medium">Memuat pengaturan aplikasi...</p>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <RouteHandler />

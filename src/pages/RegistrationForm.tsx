@@ -15,14 +15,86 @@ export default function RegistrationForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAgreed, setIsAgreed] = useState(false);
-  const [formData, setFormData] = useState<RegistrationData>({});
-  const [previews, setPreviews] = useState<Record<string, string>>({});
-  const [mapLocation, setMapLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [distance, setDistance] = useState<number | null>(null);
+  const [formData, setFormData] = useState<RegistrationData>(() => {
+    const cached = localStorage.getItem('registration_form_data');
+    return cached ? JSON.parse(cached) : {};
+  });
+  const [previews, setPreviews] = useState<Record<string, string>>(() => {
+    const cached = localStorage.getItem('registration_form_previews');
+    return cached ? JSON.parse(cached) : {};
+  });
+  const [mapLocation, setMapLocation] = useState<{lat: number, lng: number} | null>(() => {
+    const cached = localStorage.getItem('registration_form_location');
+    return cached ? JSON.parse(cached) : null;
+  });
+  const [distance, setDistance] = useState<number | null>(() => {
+    const cached = localStorage.getItem('registration_form_distance');
+    return cached ? JSON.parse(cached) : null;
+  });
+
+  // Save to localStorage when state changes
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('registration_form_data', JSON.stringify(formData));
+    } catch (e) {
+      console.warn('Could not save form data to localStorage, quota exceeded or private mode active.');
+    }
+  }, [formData]);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('registration_form_previews', JSON.stringify(previews));
+    } catch (e) {
+      console.warn('Could not save previews to localStorage, quota exceeded or private mode active.');
+    }
+  }, [previews]);
+
+  React.useEffect(() => {
+    if (mapLocation) {
+      localStorage.setItem('registration_form_location', JSON.stringify(mapLocation));
+    } else {
+      localStorage.removeItem('registration_form_location');
+    }
+  }, [mapLocation]);
+
+  React.useEffect(() => {
+    if (distance !== null) {
+      localStorage.setItem('registration_form_distance', JSON.stringify(distance));
+    } else {
+      localStorage.removeItem('registration_form_distance');
+    }
+  }, [distance]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const compressImage = (file: File, maxWidth = 800): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/webp', 0.8));
+        };
+      };
+    });
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
@@ -41,14 +113,25 @@ export default function RegistrationForm() {
       return;
     }
 
-    // Convert to Base64
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
+    try {
+      let base64String = '';
+      if (file.type.startsWith('image/')) {
+        // Compress images to save localStorage space and speed up upload
+        base64String = await compressImage(file, 1024);
+      } else {
+        // For PDFs and other files, convert directly
+        base64String = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+      }
+      
       setFormData(prev => ({ ...prev, [fieldId]: base64String }));
       setPreviews(prev => ({ ...prev, [fieldId]: base64String }));
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error processing file", error);
+    }
   };
 
   const handleLocationSelect = (lat: number, lng: number) => {
@@ -182,6 +265,12 @@ export default function RegistrationForm() {
           if (result.isConfirmed) {
             printProof(response.noPendaftaran);
           }
+          // Clear localStorage on success
+          localStorage.removeItem('registration_form_data');
+          localStorage.removeItem('registration_form_previews');
+          localStorage.removeItem('registration_form_location');
+          localStorage.removeItem('registration_form_distance');
+          
           // Reset form
           window.location.href = '/';
         });
@@ -342,7 +431,7 @@ export default function RegistrationForm() {
                     <p className="text-xs text-slate-500 mb-3">
                       Klik pada peta untuk menandai lokasi rumah Anda. Jarak ke sekolah akan dihitung secara otomatis.
                     </p>
-                    <MapPicker onLocationSelect={handleLocationSelect} />
+                    <MapPicker onLocationSelect={handleLocationSelect} initialLocation={mapLocation || undefined} />
                     
                     {distance !== null && (
                       <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">

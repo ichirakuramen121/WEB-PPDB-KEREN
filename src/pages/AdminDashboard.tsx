@@ -31,7 +31,10 @@ const compressImage = (file: File, maxWidth = 800): Promise<string> => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
+        
+        // Use webp to preserve transparency and keep size small (good for PNGs). 
+        // Fallback to webp for everything reduces size.
+        resolve(canvas.toDataURL('image/webp', 0.8));
       };
     };
   });
