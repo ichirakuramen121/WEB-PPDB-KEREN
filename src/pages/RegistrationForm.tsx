@@ -189,6 +189,11 @@ export default function RegistrationForm() {
     
     settings?.formFields?.forEach(field => {
       if (field.type !== 'file') {
+        if (startY > 260) {
+          doc.addPage();
+          startY = 20;
+        }
+
         doc.text(field.label, 20, startY);
         doc.text(":", 70, startY);
         let value = formData[field.label] || '-';
@@ -198,12 +203,22 @@ export default function RegistrationForm() {
         
         // Handle long text
         const splitText = doc.splitTextToSize(value, 115);
+        
+        // check if splitText pushes startY over length, maybe rare to have super long single line though
+        if (startY + (lineHeight * splitText.length) > 280) {
+           doc.addPage();
+           startY = 20;
+        }
+        
         doc.text(splitText, 75, startY);
         startY += lineHeight * splitText.length;
       }
     });
 
     // Footer
+    if (startY > 270) {
+      doc.addPage();
+    }
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text("Simpan bukti pendaftaran ini untuk mengecek status kelulusan.", 105, 280, { align: "center" });
