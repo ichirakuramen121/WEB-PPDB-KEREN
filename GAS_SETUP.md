@@ -32,6 +32,33 @@ Sistem PPDB Online ini menggunakan Google Apps Script dan Google Sheets sebagai 
 const SHEET_PENDAFTAR = 'Pendaftar';
 const SHEET_PENGATURAN = 'Pengaturan';
 
+// Fungsi pembantu untuk mengunggah dan mendekode berkas Base64 langsung ke Google Drive
+function saveFileToDrive(base64Data, fileName) {
+  try {
+    const splitData = base64Data.split(',');
+    const contentType = splitData[0].match(/:(.*?);/)[1];
+    const rawData = splitData[1];
+    const decoded = Utilities.base64Decode(rawData);
+    const blob = Utilities.newBlob(decoded, contentType, fileName);
+    
+    let folder;
+    const folders = DriveApp.getFoldersByName("PPDB_Uploads");
+    if (folders.hasNext()) {
+      folder = folders.next();
+    } else {
+      folder = DriveApp.createFolder("PPDB_Uploads");
+    }
+    
+    const file = folder.createFile(blob);
+    // Berikan akses baca bagi yang memiliki tautan/link sehingga admin bisa mengklik & melihat di dashboard
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getUrl();
+  } catch (error) {
+    console.error("Gagal menyimpan berkas ke Drive: " + error.toString());
+    return null;
+  }
+}
+
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
@@ -134,7 +161,16 @@ function doPost(e) {
       if (header === 'Timestamp') return new Date().toISOString();
       if (header === 'No Pendaftaran') return noPendaftaran;
       if (header === 'Status') return 'Proses';
-      return data[header] || '';
+      
+      let val = data[header] || '';
+      // Memeriksa jika datanya berupa berkas Base64, unggah ke Google Drive secara aman
+      if (typeof val === 'string' && val.indexOf(';base64,') !== -1) {
+        const fileUrl = saveFileToDrive(val, `${noPendaftaran}_${header.replace(/\s+/g, '_')}`);
+        if (fileUrl) {
+          val = fileUrl;
+        }
+      }
+      return val;
     });
     
     sheet.appendRow(rowData);
