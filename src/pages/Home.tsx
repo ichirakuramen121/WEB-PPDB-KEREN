@@ -57,9 +57,9 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6"
             >
-              Membangun Generasi <br className="hidden md:block" />
+              Selamat Datang di <br className="hidden md:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-500">
-                Cerdas & Berkarakter
+                SPMB SDN Citapen
               </span>
             </motion.h1>
             
