@@ -208,7 +208,23 @@ export default function AdminDashboard() {
     if (!localSettings) return;
     setIsSavingSettings(true);
     try {
-      await updateSettings(localSettings);
+      // Clean up empty options in select fields before saving
+      const cleanedFormFields = (localSettings.formFields || []).map(field => {
+        if (field.type === 'select' && field.options) {
+          return {
+            ...field,
+            options: field.options.map(o => o.trim()).filter(Boolean)
+          };
+        }
+        return field;
+      });
+
+      const settingsToSave = {
+        ...localSettings,
+        formFields: cleanedFormFields
+      };
+
+      await updateSettings(settingsToSave);
       await refreshSettings();
       Swal.fire({
         icon: 'success',
@@ -1242,7 +1258,7 @@ export default function AdminDashboard() {
                                 const globalIndex = (localSettings?.formFields || []).findIndex(f => f.id === field.id);
                                 if (globalIndex === -1) return null;
                                 return (
-                                  <div key={field.id} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
+                                  <div key={globalIndex} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
                                     <div className="md:col-span-2">
                                       <label className="block text-xs font-medium mb-1 opacity-70">ID (Unik)</label>
                                       <input
@@ -1340,7 +1356,7 @@ export default function AdminDashboard() {
                                           value={field.options?.join(', ') || ''}
                                           onChange={e => {
                                             const newFields = [...(localSettings?.formFields || [])];
-                                            newFields[globalIndex] = { ...newFields[globalIndex], options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) };
+                                            newFields[globalIndex] = { ...newFields[globalIndex], options: e.target.value.split(',').map(s => s.trim()) };
                                             setLocalSettings({...localSettings!, formFields: newFields});
                                           }}
                                           placeholder="Laki-laki, Perempuan"
