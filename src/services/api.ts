@@ -10,6 +10,8 @@ export interface FormField {
   options?: string[];
   required: boolean;
   session?: 1 | 2 | 3 | 4;
+  _tempKey?: string;
+  _rawOptions?: string;
 }
 
 export interface PanduanDokumen {

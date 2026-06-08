@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Filter, Download, Printer, CheckCircle, XCircle, Clock, FileText, Moon, Sun, Loader2, LogOut, Eye, X, Settings, LayoutDashboard, RefreshCw } from 'lucide-react';
+import { Search, Filter, Download, Printer, CheckCircle, XCircle, Clock, FileText, Moon, Sun, Loader2, LogOut, Eye, X, Settings, LayoutDashboard, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -109,7 +109,15 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (settings) {
-      setLocalSettings(settings);
+      const enrichedFields = (settings.formFields || []).map(field => ({
+        ...field,
+        _tempKey: field._tempKey || field.id || Math.random().toString(),
+        _rawOptions: field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')
+      }));
+      setLocalSettings({
+        ...settings,
+        formFields: enrichedFields
+      });
     }
   }, [settings]);
 
@@ -150,6 +158,67 @@ export default function AdminDashboard() {
         navigate('/admin/login');
       }
     });
+  };
+
+  const moveField = (fieldId: string, sessionId: number, direction: 'up' | 'down') => {
+    if (!localSettings?.formFields) return;
+    const fields = [...localSettings.formFields];
+    
+    // Get all step fields for this step exactly as they are filtered in the UI
+    const stepFields = fields.filter(f => {
+      if (f.session !== undefined) {
+        return Number(f.session) === sessionId;
+      }
+      if (f.type === 'file') {
+        return sessionId === 4;
+      }
+      const idLower = String(f.id || '').toLowerCase();
+      const labelLower = String(f.label || '').toLowerCase();
+      if (idLower.includes('wali') || labelLower.includes('wali')) {
+        return sessionId === 3;
+      }
+      if (
+        idLower.includes('orang tua') || labelLower.includes('orang tua') ||
+        idLower.includes('ortu') || labelLower.includes('ortu') ||
+        idLower.includes('bapak') || labelLower.includes('bapak') ||
+        idLower.includes('ibu') || labelLower.includes('ibu') ||
+        idLower.includes('hp') || labelLower.includes('hp') ||
+        idLower.includes('telepon') || labelLower.includes('telepon') ||
+        idLower.includes('whatsapp') || labelLower.includes('whatsapp')
+      ) {
+        return sessionId === 2;
+      }
+      return sessionId === 1;
+    });
+
+    const indexInSession = stepFields.findIndex(f => f.id === fieldId);
+    if (indexInSession === -1) return;
+
+    if (direction === 'up') {
+      if (indexInSession === 0) return; // Already first
+      const currentField = stepFields[indexInSession];
+      const targetField = stepFields[indexInSession - 1];
+      
+      const currentIndexInMain = fields.findIndex(f => f.id === currentField.id);
+      const targetIndexInMain = fields.findIndex(f => f.id === targetField.id);
+      
+      // Swap
+      fields[currentIndexInMain] = targetField;
+      fields[targetIndexInMain] = currentField;
+    } else {
+      if (indexInSession === stepFields.length - 1) return; // Already last
+      const currentField = stepFields[indexInSession];
+      const targetField = stepFields[indexInSession + 1];
+      
+      const currentIndexInMain = fields.findIndex(f => f.id === currentField.id);
+      const targetIndexInMain = fields.findIndex(f => f.id === targetField.id);
+      
+      // Swap
+      fields[currentIndexInMain] = targetField;
+      fields[targetIndexInMain] = currentField;
+    }
+
+    setLocalSettings({ ...localSettings, formFields: fields });
   };
 
   const handleUpdateStatus = async (noPendaftaran: string, newStatus: string) => {
@@ -208,15 +277,16 @@ export default function AdminDashboard() {
     if (!localSettings) return;
     setIsSavingSettings(true);
     try {
-      // Clean up empty options in select fields before saving
+      // Clean up empty options in select fields and strip underscore properties before saving
       const cleanedFormFields = (localSettings.formFields || []).map(field => {
-        if (field.type === 'select' && field.options) {
+        const { _tempKey, _rawOptions, ...rest } = field;
+        if (rest.type === 'select' && rest.options) {
           return {
-            ...field,
-            options: field.options.map(o => o.trim()).filter(Boolean)
+            ...rest,
+            options: rest.options.map(o => o.trim()).filter(Boolean)
           };
         }
-        return field;
+        return rest;
       });
 
       const settingsToSave = {
@@ -1241,7 +1311,16 @@ export default function AdminDashboard() {
                             <h4 className="font-bold text-md text-blue-600">{step.name}</h4>
                             <button
                               onClick={() => {
-                                const newFields = [...(localSettings?.formFields || []), { id: `Field-${Date.now()}`, label: 'Field Baru', type: (step.id === 4 ? 'file' : 'text') as any, required: false, session: step.id as any }];
+                                const tempId = `Field-${Date.now()}`;
+                                const newFields = [...(localSettings?.formFields || []), { 
+                                  id: tempId, 
+                                  label: 'Field Baru', 
+                                  type: (step.id === 4 ? 'file' : 'text') as any, 
+                                  required: false, 
+                                  session: step.id as any,
+                                  _tempKey: Math.random().toString(),
+                                  _rawOptions: ''
+                                }];
                                 setLocalSettings({...localSettings!, formFields: newFields});
                               }}
                               className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded-md font-semibold transition-colors dark:bg-blue-900/30 dark:text-blue-400"
@@ -1258,7 +1337,25 @@ export default function AdminDashboard() {
                                 const globalIndex = (localSettings?.formFields || []).findIndex(f => f.id === field.id);
                                 if (globalIndex === -1) return null;
                                 return (
-                                  <div key={globalIndex} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
+                                  <div key={field._tempKey || field.id} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
+                                    <div className="md:col-span-1 flex gap-1 justify-start pb-1">
+                                      <button
+                                        onClick={() => moveField(field.id, step.id, 'up')}
+                                        disabled={stepFields.indexOf(field) === 0}
+                                        className="p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                                        title="Pindahkan Ke Atas"
+                                      >
+                                        <ArrowUp size={16} />
+                                      </button>
+                                      <button
+                                        onClick={() => moveField(field.id, step.id, 'down')}
+                                        disabled={stepFields.indexOf(field) === stepFields.length - 1}
+                                        className="p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                                        title="Pindahkan Ke Bawah"
+                                      >
+                                        <ArrowDown size={16} />
+                                      </button>
+                                    </div>
                                     <div className="md:col-span-2">
                                       <label className="block text-xs font-medium mb-1 opacity-70">ID (Unik)</label>
                                       <input
@@ -1267,12 +1364,15 @@ export default function AdminDashboard() {
                                         onChange={e => {
                                           const newFields = [...(localSettings?.formFields || [])];
                                           newFields[globalIndex] = { ...newFields[globalIndex], id: e.target.value };
+                                          if (!newFields[globalIndex]._tempKey) {
+                                            newFields[globalIndex]._tempKey = field.id || Math.random().toString();
+                                          }
                                           setLocalSettings({...localSettings!, formFields: newFields});
                                         }}
                                         className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
                                       />
                                     </div>
-                                    <div className="md:col-span-3">
+                                    <div className="md:col-span-2">
                                       <label className="block text-xs font-medium mb-1 opacity-70">Label</label>
                                       <input
                                         type="text"
@@ -1342,7 +1442,7 @@ export default function AdminDashboard() {
                                           const newFields = (localSettings?.formFields || []).filter(f => f.id !== field.id);
                                           setLocalSettings({...localSettings!, formFields: newFields});
                                         }}
-                                        className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors dark:hover:bg-red-900/20"
+                                        className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors dark:hover:bg-red-900/20 cursor-pointer"
                                         title="Hapus Field"
                                       >
                                         <X size={18} />
@@ -1353,10 +1453,14 @@ export default function AdminDashboard() {
                                         <label className="block text-xs font-medium mb-1 opacity-70">Opsi (Pisahkan dengan koma)</label>
                                         <input
                                           type="text"
-                                          value={field.options?.join(', ') || ''}
+                                          value={field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')}
                                           onChange={e => {
                                             const newFields = [...(localSettings?.formFields || [])];
-                                            newFields[globalIndex] = { ...newFields[globalIndex], options: e.target.value.split(',').map(s => s.trim()) };
+                                            newFields[globalIndex] = { 
+                                              ...newFields[globalIndex], 
+                                              _rawOptions: e.target.value,
+                                              options: e.target.value.split(',').map(s => s.trim()) 
+                                            };
                                             setLocalSettings({...localSettings!, formFields: newFields});
                                           }}
                                           placeholder="Laki-laki, Perempuan"
