@@ -60,9 +60,9 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6"
             >
-              Membangun Generasi <br className="hidden md:block" />
+              Selamat Datang di <br className="hidden md:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-500">
-                Cerdas & Berkarakter
+                SPMB SDN Citapen
               </span>
             </motion.h1>
             
@@ -86,7 +86,7 @@ export default function Home() {
                   disabled
                   className="inline-flex justify-center items-center gap-2 bg-slate-400 text-white px-8 py-4 rounded-full text-lg font-semibold cursor-not-allowed shadow-sm"
                 >
-                  <AlertCircle size={20} /> Pendaftaran Ditutup
+                  <AlertCircle size={20} /> Pendaftaran Belum di Buka
                 </button>
               ) : (
                 <Link
@@ -319,7 +319,7 @@ export default function Home() {
                 disabled
                 className="inline-flex justify-center items-center gap-2 bg-slate-700 text-slate-400 px-8 py-4 rounded-full text-lg font-bold cursor-not-allowed shadow-lg"
               >
-                <AlertCircle size={20} /> Pendaftaran Ditutup
+                <AlertCircle size={20} /> Pendaftaran Belum di Buka
               </button>
             ) : (
               <Link
