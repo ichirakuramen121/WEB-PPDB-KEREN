@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, CheckCircle, XCircle, Clock, Loader2, ArrowLeft, Printer } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Clock, Loader2, ArrowLeft, Printer, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { checkStatus } from '../services/api';
 import { cn } from '../lib/utils';
@@ -48,6 +48,9 @@ export default function CheckStatus() {
     const doc = new jsPDF();
     let currentY = 20;
     
+    const rawTahun = settings?.tahunPendaftaran || new Date().getFullYear().toString();
+    const tahunAjaran = rawTahun.includes('/') ? rawTahun : `${rawTahun}/${parseInt(rawTahun, 10) + 1}`;
+    
     // Header (Kop Surat)
     if (settings?.kopSurat) {
       try {
@@ -58,11 +61,11 @@ export default function CheckStatus() {
         
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text('BUKTI KELULUSAN PPDB', 105, currentY, { align: 'center' });
+        doc.text('BUKTI KELULUSAN SPMB', 105, currentY, { align: 'center' });
         currentY += 8;
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Tahun Ajaran ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, 105, currentY, { align: 'center' });
+        doc.text(`Tahun Ajaran ${tahunAjaran}`, 105, currentY, { align: 'center' });
         currentY += 6;
         if (settings?.nomorSurat) {
           doc.setFontSize(11);
@@ -74,11 +77,11 @@ export default function CheckStatus() {
         console.error("Error adding kop surat", e);
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text('BUKTI KELULUSAN PPDB', 105, currentY, { align: 'center' });
+        doc.text('BUKTI KELULUSAN SPMB', 105, currentY, { align: 'center' });
         currentY += 8;
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Tahun Ajaran ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, 105, currentY, { align: 'center' });
+        doc.text(`Tahun Ajaran ${tahunAjaran}`, 105, currentY, { align: 'center' });
         currentY += 6;
         if (settings?.nomorSurat) {
           doc.setFontSize(11);
@@ -91,11 +94,11 @@ export default function CheckStatus() {
     } else {
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('BUKTI KELULUSAN PPDB', 105, currentY, { align: 'center' });
+      doc.text('BUKTI KELULUSAN SPMB', 105, currentY, { align: 'center' });
       currentY += 8;
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Tahun Ajaran ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, 105, currentY, { align: 'center' });
+      doc.text(`Tahun Ajaran ${tahunAjaran}`, 105, currentY, { align: 'center' });
       currentY += 6;
       if (settings?.nomorSurat) {
         doc.setFontSize(11);
@@ -108,7 +111,7 @@ export default function CheckStatus() {
     
     // Content
     doc.setFontSize(11);
-    doc.text('Berdasarkan hasil seleksi Penerimaan Peserta Didik Baru (PPDB),', 20, currentY);
+    doc.text('Berdasarkan hasil seleksi Penerimaan Peserta Didik Baru (SPMB),', 20, currentY);
     currentY += 7;
     doc.text('menyatakan bahwa:', 20, currentY);
     currentY += 13;
@@ -192,6 +195,147 @@ export default function CheckStatus() {
     doc.save(`Bukti_Kelulusan_${data.noPendaftaran}.pdf`);
   };
 
+  const printDokumenDaftarUlang = (data: any) => {
+    if (!data) return;
+    
+    const doc = new jsPDF();
+    let currentY = 20;
+    
+    // PAGE 1: FORMULIR DAFTAR ULANG
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PEMERINTAH KOTA TASIKMALAYA', 105, currentY, { align: 'center' });
+    currentY += 6;
+    doc.text('DINAS PENDIDIKAN', 105, currentY, { align: 'center' });
+    currentY += 6;
+    doc.setFontSize(13);
+    doc.text('SDN CITAPEN TASIKMALAYA', 105, currentY, { align: 'center' });
+    currentY += 5;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Jl. Otto Iskandardinata No.12, Citapen, Kec. Tawang, Kota Tasikmalaya, Jawa Barat 46115', 105, currentY, { align: 'center' });
+    currentY += 4;
+    doc.line(20, currentY, 190, currentY);
+    doc.line(20, currentY + 0.5, 190, currentY + 0.5);
+    currentY += 10;
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FORMULIR DAFTAR ULANG PESERTA DIDIK BARU (SPMB)', 105, currentY, { align: 'center' });
+    currentY += 5;
+    doc.text(`TAHUN AJARAN 2026/2027`, 105, currentY, { align: 'center' });
+    currentY += 12;
+    
+    doc.setFontSize(10);
+    const renderRow1 = (label: string, value: string) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, 25, currentY);
+      doc.setFont('helvetica', 'normal');
+      doc.text(':', 75, currentY);
+      doc.text(value || '________________________________________________', 80, currentY);
+      currentY += 8;
+    };
+    
+    renderRow1('No. Pendaftaran', data.noPendaftaran || '-');
+    renderRow1('Nama Lengkap', data.namaLengkap || '-');
+    renderRow1('NIK Siswa', data.NIK || '________________________________________________');
+    renderRow1('Tempat, Tanggal Lahir', (data['Tempat Lahir'] || '____________________') + ', ' + (data['Tanggal Lahir'] || '____________________'));
+    renderRow1('Jenis Kelamin', data['Jenis Kelamin'] || '____________________');
+    renderRow1('Alamat Calon Siswa', data.Alamat || '________________________________________________');
+    renderRow1('Nama Orang Tua / Wali', data['Nama Orang Tua'] || '____________________');
+    renderRow1('No. WhatsApp Aktif', data['No HP'] || '____________________');
+    
+    currentY += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.text('PERNYATAAN DAFTAR ULANG:', 20, currentY);
+    currentY += 6;
+    doc.setFont('helvetica', 'normal');
+    const statementText = 'Saya yang bertanda tangan di bawah ini menyatakan dengan sadar dan sungguh-sungguh melakukan daftar ulang di SDN Citapen sebagai Calon Siswa Baru Tahun Ajaran 2026/2027 dan siap membawa semua dokumen persyaratan pendukung.';
+    const splitStatement = doc.splitTextToSize(statementText, 170);
+    doc.text(splitStatement, 20, currentY);
+    currentY += splitStatement.length * 5 + 15;
+    
+    const today = new Date();
+    const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+    const tempat = settings?.tempatSurat || 'Tasikmalaya';
+    const tanggal = settings?.tanggalSurat || dateStr;
+    
+    doc.text(`${tempat}, ${tanggal}`, 130, currentY);
+    currentY += 6;
+    doc.text('Panitia Penerimaan,', 25, currentY);
+    doc.text('Orang Tua / Wali Murid,', 130, currentY);
+    currentY += 24;
+    doc.line(25, currentY, 70, currentY);
+    doc.line(130, currentY, 180, currentY);
+    doc.text('( Panitia SPMB )', 25, currentY + 4);
+    doc.text(`( ${data['Nama Orang Tua'] || '____________________'} )`, 130, currentY + 4);
+    
+    // PAGE 2: SURAT PERNYATAAN MENAATI TATA TERTIB SEKOLAH
+    doc.addPage();
+    currentY = 20;
+    
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SURAT PERNYATAAN ORANG TUA / WALI SISWA', 105, currentY, { align: 'center' });
+    currentY += 5;
+    doc.setFontSize(10);
+    doc.text('TENTANG KESEDIAAN MENYETUJUI TATA TERTIB SEKOLAH', 105, currentY, { align: 'center' });
+    currentY += 4;
+    doc.line(20, currentY, 190, currentY);
+    currentY += 10;
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Saya yang bertanda tangan di bawah ini:', 20, currentY);
+    currentY += 8;
+    
+    renderRow1('Nama Lengkap Orang Tua', data['Nama Orang Tua'] || '____________________');
+    renderRow1('Alamat Orang Tua', data.Alamat || '________________________________________________');
+    renderRow1('Nomor Telp/HP', data['No HP'] || '____________________');
+    renderRow1('Merupakan Orang Tua dari', data.namaLengkap || '____________________');
+    renderRow1('No. Pendaftaran SPMB', data.noPendaftaran || '-');
+    
+    currentY += 6;
+    doc.text('Menyatakan dengan sesungguhnya bahwa selaku Orang Tua/Wali siap untuk:', 20, currentY);
+    currentY += 8;
+    
+    const rules = [
+      '1. Membimbing dan memastikan putra-putri kami mematuhi seluruh peraturan sekolah.',
+      '2. Mendukung secara penuh seluruh program pendidikan dan kurikulum di SDN Citapen.',
+      '3. Berkomunikasi dengan sopan dan menyelesaikan setiap kendala siswa secara baik dengan Guru.',
+      '4. Menghadiri pertemuan, rapat komite, dan undangan resmi sekolah tepat waktu.',
+      '5. Mengawasi absensi dan ketertiban belajar siswa demi meraih prestasi belajar yang maksimal.'
+    ];
+    
+    rules.forEach((rule) => {
+      const splitRule = doc.splitTextToSize(rule, 170);
+      doc.text(splitRule, 20, currentY);
+      currentY += splitRule.length * 6;
+    });
+    
+    currentY += 8;
+    doc.text('Demikian surat pernyataan ini kami buat secara sukarela, sadar, dan bertandatangan di atas materai untuk dipergunakan dalam pemberkasan daftar ulang siswa baru.', 20, currentY);
+    currentY += 20;
+    
+    doc.text(`${tempat}, ${tanggal}`, 130, currentY);
+    currentY += 6;
+    doc.text('Mengetahui / Siswa,', 25, currentY);
+    doc.text('Orang Tua / Wali,', 130, currentY);
+    currentY += 6;
+    doc.setFontSize(8);
+    doc.text('Materai Rp 10.000', 130, currentY);
+    doc.setFontSize(10);
+    currentY += 18;
+    
+    doc.line(25, currentY, 70, currentY);
+    doc.line(130, currentY, 180, currentY);
+    
+    doc.text(`( ${data.namaLengkap || '____________________'} )`, 25, currentY + 4);
+    doc.text(`( ${data['Nama Orang Tua'] || '____________________'} )`, 130, currentY + 4);
+    
+    doc.save(`Dokumen_Sekolah_DaftarUlang_${data.noPendaftaran}.pdf`);
+  };
+
   const getStatusDisplay = (status: string, data?: any) => {
     let displayStatus = status;
     if (settings?.tanggalPengumuman) {
@@ -213,24 +357,40 @@ export default function CheckStatus() {
               <CheckCircle className="text-green-600" size={32} />
             </div>
             <h3 className="text-2xl font-bold text-green-800 mb-2">Selamat! Anda Lulus</h3>
-            <p className="text-green-700 mb-4">Silakan cetak bukti kelulusan dan lakukan daftar ulang.</p>
+            <p className="text-green-700 mb-4">Anda dinyatakan LULUS seleksi SPMB Online {settings?.namaSekolah || 'SDN Citapen'}.</p>
             
-            <div className="bg-white rounded-lg p-4 border border-green-100 text-left mb-4">
-              <h4 className="font-semibold text-green-800 mb-2 text-sm">Persyaratan Daftar Ulang:</h4>
+            <div className="bg-white rounded-lg p-5 border border-green-200 text-left mb-6 shadow-sm">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 font-semibold text-xs mb-4 flex items-start gap-2">
+                <span className="bg-red-200 text-red-800 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">!</span>
+                <span>Calon siswa wajib membawa seluruh berkas fisik persyaratan lengkap & dokumen sekolah ketika daftar ulang ke sekolah.</span>
+              </div>
+              
+              <h4 className="font-bold text-green-800 mb-2 text-sm uppercase">Persyaratan Daftar Ulang (Wajib Dibawa):</h4>
               {settings?.tanggalDaftarUlang && (
-                <p className="text-sm text-green-700 mb-2 font-medium">Tanggal Daftar Ulang: {new Date(settings.tanggalDaftarUlang).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p className="text-sm text-green-700 mb-3 font-semibold">
+                  Jadwal Daftar Ulang: {new Date(settings.tanggalDaftarUlang).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
               )}
-              <div className="text-sm text-green-700 whitespace-pre-line">
+              <div className="text-sm text-slate-700 whitespace-pre-line space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-100">
                 {settings?.persyaratanDaftarUlang || '1. Membawa Bukti Kelulusan yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal'}
               </div>
             </div>
 
-            <button
-              onClick={() => printBuktiLulus(data)}
-              className="inline-flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-medium transition-colors shadow-sm"
-            >
-              <Printer size={20} /> Cetak Bukti Kelulusan
-            </button>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => printBuktiLulus(data)}
+                className="inline-flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3.5 rounded-xl font-medium transition-colors shadow-sm"
+              >
+                <Printer size={18} /> Cetak Bukti Kelulusan
+              </button>
+              
+              <button
+                onClick={() => printDokumenDaftarUlang(data)}
+                className="inline-flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3.5 rounded-xl font-semibold transition-colors shadow-md"
+              >
+                <Download size={18} /> Unduh Dokumen Sekolah (Syarat Print)
+              </button>
+            </div>
           </div>
         );
       case 'Tidak Lulus':
@@ -281,7 +441,7 @@ export default function CheckStatus() {
         >
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-8 py-8 text-white text-center">
             <h2 className="text-2xl font-bold mb-2">Cek Status Kelulusan</h2>
-            <p className="text-blue-100 text-sm">Masukkan nomor pendaftaran Anda untuk melihat hasil seleksi PPDB.</p>
+            <p className="text-blue-100 text-sm">Masukkan nomor pendaftaran Anda untuk melihat hasil seleksi SPMB.</p>
           </div>
 
           <div className="p-8">
@@ -294,7 +454,7 @@ export default function CheckStatus() {
                   value={noPendaftaran}
                   onChange={(e) => setNoPendaftaran(e.target.value)}
                   className="flex-grow px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="Contoh: PPDB-2024-001"
+                  placeholder="Contoh: SPMB-2026-001"
                 />
                 <button
                   type="submit"

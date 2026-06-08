@@ -56,7 +56,7 @@ function setup() {
   if (!adminSheet) {
     adminSheet = ss.insertSheet(ADMIN_SHEET_NAME);
     adminSheet.appendRow(["Username", "Password"]);
-    adminSheet.appendRow(["admin", "admin123"]); // Default credentials
+    adminSheet.appendRow(["admin", "ajayhungkul"]); // Default credentials
     adminSheet.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#e0e0e0");
   }
 
@@ -190,10 +190,79 @@ function handleUpdateSettings(newSettings) {
     }
   });
 
+  // If formFields is updated, sync headers in "Data Pendaftar" sheet!
+  if (newSettings.formFields) {
+    let fields = [];
+    try {
+      fields = typeof newSettings.formFields === 'string' ? JSON.parse(newSettings.formFields) : newSettings.formFields;
+    } catch(e) {}
+    
+    if (Array.isArray(fields)) {
+      const mainSheet = ss.getSheetByName(SHEET_NAME);
+      if (mainSheet) {
+        syncSheetColumns(mainSheet, fields);
+      }
+    }
+  }
+
   return ContentService.createTextOutput(JSON.stringify({
     status: "success",
     message: "Pengaturan berhasil disimpan"
   })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function syncSheetColumns(sheet, newFields) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  
+  if (lastCol === 0) return; // Empty sheet
+  
+  // 1. Read existing headers and data
+  const entireRange = sheet.getRange(1, 1, Math.max(lastRow, 1), Math.max(lastCol, 1));
+  const oldValues = entireRange.getValues();
+  const oldHeaders = oldValues[0];
+  const oldRows = oldValues.slice(1);
+  
+  // Create objects of existing rows to map data correctly
+  const records = oldRows.map(row => {
+    let obj = {};
+    oldHeaders.forEach((header, index) => {
+      if (header) {
+        obj[header] = row[index];
+      }
+    });
+    return obj;
+  });
+  
+  // 2. Define standard base headers
+  const baseHeaders = ["Timestamp", "No Pendaftaran", "Status", "Alasan Penolakan", "Jarak ke Sekolah (km)", "Koordinat Lokasi"];
+  
+  // 3. Define new headers list based on configured active form fields
+  const newHeaders = [...baseHeaders];
+  newFields.forEach(field => {
+    if (field && field.label && !newHeaders.includes(field.label)) {
+      newHeaders.push(field.label);
+    }
+  });
+  
+  // 4. Construct the new values grid
+  const newValuesGrid = [];
+  newValuesGrid.push(newHeaders); // First row is headers
+  
+  records.forEach(vDoc => {
+    const row = newHeaders.map(hdr => {
+      return vDoc[hdr] !== undefined ? vDoc[hdr] : "";
+    });
+    newValuesGrid.push(row);
+  });
+  
+  // 5. Clear the old sheet ranges completely and write the aligned data
+  sheet.clear();
+  sheet.getRange(1, 1, newValuesGrid.length, newHeaders.length).setValues(newValuesGrid);
+  
+  // Style the header row nicely
+  sheet.getRange(1, 1, 1, newHeaders.length).setFontWeight("bold").setBackground("#e0e0e0");
+  sheet.setFrozenRows(1);
 }
 
 function handleRegistration(data) {

@@ -1,9 +1,22 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Upload, AlertCircle, FileText, Image as ImageIcon, Loader2, MapPin } from 'lucide-react';
+import { 
+  Upload, 
+  AlertCircle, 
+  FileText, 
+  Image as ImageIcon, 
+  Loader2, 
+  MapPin, 
+  User, 
+  Users, 
+  UserCheck, 
+  ChevronLeft, 
+  ChevronRight, 
+  CheckCircle 
+} from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
-import { submitRegistration, RegistrationData } from '../services/api';
+import { submitRegistration, RegistrationData, getScheduledStatus } from '../services/api';
 import { useSettings } from '../context/SettingsContext';
 import jsPDF from 'jspdf';
 import MapPicker from '../components/MapPicker';
@@ -11,11 +24,24 @@ import { calculateDistance } from '../utils/distance';
 
 export default function RegistrationForm() {
   const { settings } = useSettings();
-  const isClosed = settings?.statusPendaftaran === 'Tutup';
+  const scheduledStatus = getScheduledStatus(settings);
+  const isClosed = scheduledStatus.status === 'Tutup';
 
+  const [deviceRegistered, setDeviceRegistered] = useState(() => {
+    return localStorage.getItem('has_registered') === 'true' || document.cookie.includes('has_registered=true');
+  });
+  const [registeredNo, setRegisteredNo] = useState(() => {
+    return localStorage.getItem('registered_no') || '';
+  });
+
+  const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAgreed, setIsAgreed] = useState(false);
   const [formData, setFormData] = useState<RegistrationData>(() => {
+    // If the device has registered, we shouldn't cache form data
+    if (localStorage.getItem('has_registered') === 'true' || document.cookie.includes('has_registered=true')) {
+      return {};
+    }
     const cached = localStorage.getItem('registration_form_data');
     return cached ? JSON.parse(cached) : {};
   });
@@ -157,10 +183,10 @@ export default function RegistrationForm() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.text("BUKTI PENDAFTARAN PPDB", 105, 20, { align: "center" });
+    doc.text("BUKTI PENDAFTARAN SPMB", 105, 20, { align: "center" });
     doc.setFontSize(14);
     doc.setFont("helvetica", "normal");
-    doc.text(settings?.namaSekolah || "SDN Harapan Bangsa", 105, 30, { align: "center" });
+    doc.text(settings?.namaSekolah || "SDN Citapen", 105, 30, { align: "center" });
 
     // Content
     doc.setTextColor(0, 0, 0);
@@ -226,9 +252,78 @@ export default function RegistrationForm() {
     doc.save(`Bukti_Pendaftaran_${noPendaftaran}.pdf`);
   };
 
+  const getFieldSession = (field: any): number => {
+    if (field.session !== undefined) {
+      return Number(field.session);
+    }
+    if (field.type === 'file') {
+      return 4;
+    }
+    const idLower = String(field.id || '').toLowerCase();
+    const labelLower = String(field.label || '').toLowerCase();
+    
+    if (idLower.includes('wali') || labelLower.includes('wali')) {
+      return 3;
+    }
+    if (
+      idLower.includes('orang tua') || labelLower.includes('orang tua') ||
+      idLower.includes('ortu') || labelLower.includes('ortu') ||
+      idLower.includes('bapak') || labelLower.includes('bapak') ||
+      idLower.includes('ibu') || labelLower.includes('ibu') ||
+      idLower.includes('hp') || labelLower.includes('hp') ||
+      idLower.includes('telepon') || labelLower.includes('telepon') ||
+      idLower.includes('whatsapp') || labelLower.includes('whatsapp')
+    ) {
+      return 2;
+    }
+    return 1;
+  };
+
+  const getFieldsForStep = (stepNum: number) => {
+    return (settings?.formFields || []).filter(field => getFieldSession(field) === stepNum);
+  };
+
+  const handleNextStep = () => {
+    // Validate current step fields
+    const currentFields = getFieldsForStep(currentStep);
+    const missingFields = currentFields.filter(f => f.required && !formData[f.label] && f.type !== 'file');
+    
+    if (missingFields.length > 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Formulir Belum Lengkap',
+        text: `Mohon lengkapi data wajib: ${missingFields.map(f => f.label).join(', ')}`,
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    // Step 1 extra validation: Map Location
+    if (currentStep === 1 && !mapLocation) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Lokasi Belum Ditandai',
+        text: 'Mohon tandai lokasi rumah Anda pada peta terlebih dahulu.',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
+
+    setCurrentStep(prev => Math.min(prev + 1, 4));
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (currentStep !== 4) {
+      handleNextStep();
+      return;
+    }
+
     if (!isAgreed) {
       Swal.fire({
         icon: 'warning',
@@ -239,13 +334,15 @@ export default function RegistrationForm() {
       return;
     }
 
-    // Basic validation for files
-    const missingFiles = settings?.formFields?.filter(f => f.type === 'file' && f.required && !formData[f.label]);
-    if (missingFiles && missingFiles.length > 0) {
+    // Comprehensive final verification of all required fields
+    const allFields = settings?.formFields || [];
+    const missingRequired = allFields.filter(f => f.required && !formData[f.label]);
+    
+    if (missingRequired.length > 0) {
       Swal.fire({
         icon: 'warning',
-        title: 'Berkas Belum Lengkap',
-        text: `Mohon unggah dokumen: ${missingFiles.map(f => f.label).join(', ')}`,
+        title: 'Pendaftaran Belum Lengkap',
+        text: `Ada beberapa kolom atau berkas wajib yang belum diisi: ${missingRequired.map(f => f.label).join(', ')}`,
         confirmButtonColor: '#3b82f6'
       });
       return;
@@ -280,6 +377,11 @@ export default function RegistrationForm() {
           if (result.isConfirmed) {
             printProof(response.noPendaftaran);
           }
+          // Limit 1 device per applicant
+          localStorage.setItem('has_registered', 'true');
+          localStorage.setItem('registered_no', response.noPendaftaran);
+          document.cookie = "has_registered=true; max-age=31536000; path=/";
+
           // Clear localStorage on success
           localStorage.removeItem('registration_form_data');
           localStorage.removeItem('registration_form_previews');
@@ -304,6 +406,62 @@ export default function RegistrationForm() {
     }
   };
 
+  if (deviceRegistered) {
+    return (
+      <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 text-center p-8">
+          <div className="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <UserCheck size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Batas Pendaftaran Perangkat</h2>
+          <p className="text-slate-600 mb-6 text-sm leading-relaxed">
+            Mohon maaf, perangkat (device) ini sudah digunakan untuk mendaftarkan calon peserta didik. Setiap perangkat dibatasi hanya untuk satu kali pendaftaran guna mencegah duplikasi data pendaftar.
+          </p>
+          {registeredNo && (
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-center">
+              <span className="text-xs text-slate-500 block mb-1">Nomor Pendaftaran Terakhir dari Perangkat Ini:</span>
+              <span className="text-lg font-bold text-blue-600 block">{registeredNo}</span>
+            </div>
+          )}
+          <div className="flex flex-col gap-3">
+            <Link
+              to="/cek-status"
+              className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors text-sm"
+            >
+              Cek Status Kelulusan
+            </Link>
+            <Link
+              to="/"
+              className="inline-block bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3 rounded-lg font-medium transition-colors text-sm"
+            >
+              Kembali ke Beranda
+            </Link>
+          </div>
+          
+          <button
+            onClick={() => {
+              localStorage.removeItem('has_registered');
+              localStorage.removeItem('registered_no');
+              document.cookie = "has_registered=; max-age=-99999999; path=/";
+              setDeviceRegistered(false);
+              setRegisteredNo('');
+              Swal.fire({
+                icon: 'success',
+                title: 'Perangkat Direset',
+                text: 'Status pendaftaran perangkat berhasil direset. Anda dapat mengisi formulir kembali.',
+                timer: 1500,
+                showConfirmButton: false
+              });
+            }}
+            className="mt-8 text-xs text-slate-400 hover:text-slate-600 underline transition-colors"
+          >
+            Reset Perangkat (Uji Coba)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (isClosed) {
     return (
       <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
@@ -312,8 +470,8 @@ export default function RegistrationForm() {
             <AlertCircle size={40} />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-4">Pendaftaran Ditutup</h2>
-          <p className="text-slate-600 mb-8">
-            Mohon maaf, pendaftaran peserta didik baru saat ini sedang ditutup. Silakan kembali lagi nanti atau hubungi pihak sekolah untuk informasi lebih lanjut.
+          <p className="text-slate-600 mb-8 font-medium leading-relaxed">
+            {scheduledStatus.info}
           </p>
           <Link
             to="/"
@@ -404,118 +562,291 @@ export default function RegistrationForm() {
     }
   };
 
-  const textFields = settings?.formFields?.filter(f => f.type !== 'file') || [];
-  const fileFields = settings?.formFields?.filter(f => f.type === 'file') || [];
+  const steps = [
+    { id: 1, title: 'Data Calon Siswa', desc: 'Siswa', icon: User },
+    { id: 2, title: 'Nama Orang Tua', desc: 'Ortu', icon: Users },
+    { id: 3, title: 'Nama Wali Siswa', desc: 'Wali', icon: UserCheck },
+    { id: 4, title: 'Upload Berkas', desc: 'Berkas', icon: Upload }
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 pt-24">
       <div className="max-w-3xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100"
+          className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 mb-6"
         >
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-8 py-10 text-white text-center">
-            <h2 className="text-3xl font-bold mb-2">Formulir Pendaftaran SPMB</h2>
-            <p className="text-blue-100">Lengkapi data diri calon peserta didik dengan benar dan valid.</p>
+          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-8 py-8 text-white text-center">
+            <h2 className="text-3xl font-bold mb-1">Formulir Pendaftaran SPMB</h2>
+            <p className="text-blue-100 text-sm">Lengkapi data diri calon peserta didik baru per sesi di bawah ini.</p>
+          </div>
+
+          {/* Stepper Indicator */}
+          <div className="bg-slate-50/80 border-b border-slate-100 py-6 px-4 md:px-8">
+            <div className="flex items-center justify-between relative max-w-lg mx-auto">
+              
+              {/* Connecting line */}
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
+              
+              {/* Connecting fill line */}
+              <div 
+                className="absolute top-1/2 left-0 h-0.5 bg-blue-600 -translate-y-1/2 z-0 transition-all duration-300"
+                style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
+              />
+
+              {steps.map((step) => {
+                const IconComponent = step.icon;
+                const isCompleted = currentStep > step.id;
+                const isActive = currentStep === step.id;
+
+                return (
+                  <div key={step.id} className="flex flex-col items-center relative z-10">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Allow navigation to previously completed steps or next directly adjacent step if current validated
+                        if (isCompleted) {
+                          setCurrentStep(step.id);
+                        } else if (step.id === currentStep + 1) {
+                          handleNextStep();
+                        }
+                      }}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                        isCompleted 
+                          ? 'bg-blue-600 text-white shadow-md' 
+                          : isActive 
+                            ? 'bg-blue-600 text-white ring-4 ring-blue-100 scale-110 shadow-lg' 
+                            : 'bg-white text-slate-400 border-2 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {isCompleted ? <CheckCircle size={18} className="text-white" /> : <IconComponent size={18} />}
+                    </button>
+                    <span className={`text-[11px] font-bold mt-2 transition-colors duration-300 ${isActive ? 'text-blue-600' : isCompleted ? 'text-slate-800' : 'text-slate-400'}`}>
+                      {step.desc}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 space-y-8">
             
-            {textFields.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
-                  <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
-                  Data Pendaftar
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {textFields.map(field => (
-                    <div key={field.id} className={field.type === 'textarea' ? 'col-span-1 md:col-span-2' : ''}>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        {field.label} {field.required && '*'}
-                      </label>
-                      {renderField(field)}
-                    </div>
-                  ))}
-                  
-                  <div className="col-span-1 md:col-span-2 mt-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-                      <MapPin size={18} className="text-blue-600" />
-                      Tandai Lokasi Rumah di Peta
-                    </label>
-                    <p className="text-xs text-slate-500 mb-3">
-                      Klik pada peta untuk menandai lokasi rumah Anda. Jarak ke sekolah akan dihitung secara otomatis.
-                    </p>
-                    <MapPicker onLocationSelect={handleLocationSelect} initialLocation={mapLocation || undefined} />
-                    
-                    {distance !== null && (
-                      <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
-                        <span className="text-sm text-slate-700">Jarak ke Sekolah:</span>
-                        <span className="font-bold text-blue-700">{distance.toFixed(2)} km</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {fileFields.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
-                  <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
-                  Upload Berkas
-                </h3>
-                <p className="text-sm text-slate-500 mb-6 flex items-center gap-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                  <AlertCircle size={16} className="text-blue-500 shrink-0" />
-                  Format file: JPG/PNG/PDF. Ukuran maksimal: 2MB per file.
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {fileFields.map(field => (
-                    <div key={field.id} className="flex flex-col">
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        {field.label} {field.required && '*'}
-                      </label>
-                      {renderField(field)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Pernyataan Kebenaran Data */}
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <div className="flex-shrink-0 mt-1">
-                  <input
-                    type="checkbox"
-                    checked={isAgreed}
-                    onChange={(e) => setIsAgreed(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="text-sm text-slate-700">
-                  <span className="font-semibold block mb-1">Pernyataan Kebenaran Data</span>
-                  Saya menyatakan bahwa data yang saya isikan dalam formulir pendaftaran ini adalah benar dan dapat dipertanggungjawabkan. Apabila di kemudian hari ditemukan data yang tidak sesuai, saya bersedia menerima sanksi sesuai ketentuan yang berlaku.
-                </div>
-              </label>
-            </div>
-
-            <div className="pt-4 border-t border-slate-100">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all shadow-md hover:shadow-lg disabled:opacity-70 flex items-center justify-center"
+            {/* Step 1: Data Calon Siswa */}
+            {currentStep === 1 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2" size={24} />
-                    Memproses...
-                  </>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
+                    <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
+                    Data Calon Siswa
+                  </h3>
+                </div>
+                
+                {getFieldsForStep(1).length === 0 ? (
+                  <p className="text-sm text-slate-500 italic">Tidak ada kolom data calon siswa diatur sekolah.</p>
                 ) : (
-                  'Kirim Pendaftaran'
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {getFieldsForStep(1).map(field => (
+                      <div key={field.id} className={field.type === 'textarea' ? 'col-span-1 md:col-span-2' : ''}>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          {field.label} {field.required && '*'}
+                        </label>
+                        {renderField(field)}
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </button>
+
+                {/* MapPicker stays in Step 1 (Locational analysis for Calon Siswa address) */}
+                <div className="border-t pt-6 mt-6">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                    <MapPin size={18} className="text-blue-600" />
+                    Tandai Lokasi Rumah di Peta *
+                  </label>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Klik pada peta di bawah untuk menandai koordinat rumah Anda. Perhitungan jarak zonasi ke sekolah dilakukan otomatis.
+                  </p>
+                  <MapPicker onLocationSelect={handleLocationSelect} initialLocation={mapLocation || undefined} />
+                  
+                  {distance !== null && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
+                      <span className="text-sm text-slate-700 font-medium">Perhitungan Jarak ke Sekolah:</span>
+                      <span className="font-extrabold text-blue-700 bg-blue-100 px-3 py-1 rounded-full text-sm">{distance.toFixed(2)} km</span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 2: Kontak & Orang Tua */}
+            {currentStep === 2 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
+                    <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
+                    Data Orang Tua Kandung
+                  </h3>
+                </div>
+
+                {getFieldsForStep(2).length === 0 ? (
+                  <div className="p-4 bg-slate-50 rounded-xl text-center">
+                    <p className="text-sm text-slate-500 italic">Sesi ini tidak memiliki kolom khusus. Anda dapat langsung melanjutkan ke sesi berikutnya.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {getFieldsForStep(2).map(field => (
+                      <div key={field.id} className={field.type === 'textarea' ? 'col-span-1 md:col-span-2' : ''}>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          {field.label} {field.required && '*'}
+                        </label>
+                        {renderField(field)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Step 3: Wali Siswa */}
+            {currentStep === 3 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 border-b pb-2 mb-4 flex items-center gap-2">
+                    <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
+                    Data Wali Siswa
+                  </h3>
+                  <p className="text-xs text-slate-500 mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100 leading-relaxed">
+                    Catatan: Sesi ini dapat diisi jika siswa diasuh oleh Wali/kerabat selain Orang Tua kandung. Kosongkan / lewati apabila tidak memiliki wali siswa khusus.
+                  </p>
+                </div>
+
+                {getFieldsForStep(3).length === 0 ? (
+                  <div className="p-4 bg-slate-50 rounded-xl text-center">
+                    <p className="text-sm text-slate-500 italic">Sesi ini tidak memiliki kolom khusus. Anda dapat langsung melanjutkan ke sesi berikutnya.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {getFieldsForStep(3).map(field => (
+                      <div key={field.id} className={field.type === 'textarea' ? 'col-span-1 md:col-span-2' : ''}>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          {field.label} {field.required && '*'}
+                        </label>
+                        {renderField(field)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Step 4: Berkas & Upload */}
+            {currentStep === 4 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 border-b pb-2 mb-6 flex items-center gap-2">
+                    <span className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">4</span>
+                    Upload Berkas Syarat
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-6 flex items-center gap-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <AlertCircle size={16} className="text-blue-500 shrink-0" />
+                    Format file: JPG, PNG atau PDF. Ukuran maksimal: 2MB per file.
+                  </p>
+                </div>
+
+                {getFieldsForStep(4).length === 0 ? (
+                  <div className="p-4 bg-slate-50 rounded-xl text-center">
+                    <p className="text-sm text-slate-500 italic">Sesi ini tidak memiliki kolom unggah berkas khusus. Anda dapat langsung melanjutkan untuk kirim.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {getFieldsForStep(4).map(field => (
+                      <div key={field.id} className="flex flex-col">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          {field.label} {field.required && '*'}
+                        </label>
+                        {renderField(field)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Pernyataan Kebenaran Data in Final Step */}
+                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mt-6">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <div className="flex-shrink-0 mt-1">
+                      <input
+                        type="checkbox"
+                        checked={isAgreed}
+                        onChange={(e) => setIsAgreed(e.target.checked)}
+                        className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="text-sm text-slate-700">
+                      <span className="font-semibold block mb-1">Pernyataan Kebenaran Data</span>
+                      Saya menyatakan bahwa data yang saya isikan dalam formulir pendaftaran ini adalah benar dan dapat dipertanggungjawabkan. Apabila di kemudian hari ditemukan data yang tidak sesuai, saya bersedia menerima sanksi sesuai ketentuan yang berlaku.
+                    </div>
+                  </label>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step Wizard Action Buttons */}
+            <div className="pt-6 border-t border-slate-100 flex justify-between items-center gap-4">
+              {currentStep > 1 ? (
+                <button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="px-5 py-3 rounded-xl font-semibold border-2 border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-all"
+                >
+                  <ChevronLeft size={18} />
+                  Sebelumnya
+                </button>
+              ) : (
+                <div /> // Dummy element to push the next/submit button right
+              )}
+
+              {currentStep < 4 ? (
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-1 shadow-md hover:shadow-lg transition-all"
+                >
+                  Selanjutnya
+                  <ChevronRight size={18} />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg disabled:opacity-70 flex items-center justify-center transition-all"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={18} />
+                      Mengirim...
+                    </>
+                  ) : (
+                    'Kirim Pendaftaran'
+                  )}
+                </button>
+              )}
             </div>
           </form>
         </motion.div>

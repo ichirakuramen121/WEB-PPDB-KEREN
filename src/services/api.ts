@@ -1,7 +1,7 @@
 // Service to interact with Google Apps Script Backend
 
 // To use the real backend, replace this URL with your deployed Google Apps Script Web App URL
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxfbfCnQQ84kTnOoVPK19oC8qL8nu548ax1CiVuXo5XShZby1EJ10Q3M7AkCOAEZATK/exec"; 
+const GAS_WEB_APP_URL = ""; 
 
 export interface FormField {
   id: string;
@@ -9,6 +9,7 @@ export interface FormField {
   type: 'text' | 'number' | 'select' | 'date' | 'file' | 'textarea';
   options?: string[];
   required: boolean;
+  session?: 1 | 2 | 3 | 4;
 }
 
 export interface PanduanDokumen {
@@ -24,7 +25,7 @@ export interface AppSettings {
   telepon: string;
   email: string;
   deskripsi: string;
-  statusPendaftaran: 'Buka' | 'Tutup';
+  statusPendaftaran: 'Buka' | 'Tutup' | 'Otomatis';
   formFields: FormField[];
   persyaratanDaftarUlang?: string;
   tanggalDaftarUlang?: string;
@@ -68,38 +69,39 @@ export interface AdminData extends RegistrationData {
 // Mock data for preview if GAS URL is not set
 const getInitialMockSettings = (): AppSettings => {
   const defaultSettings: AppSettings = {
-    namaSekolah: "SDN Harapan Bangsa",
-    alamat: "Jl. Pendidikan No. 123, Kota Pelajar, Indonesia 12345",
-    telepon: "(021) 1234-5678",
-    email: "info@sdnharapanbangsa.sch.id",
-    deskripsi: "Mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan siap menghadapi tantangan masa depan dengan pendidikan berkualitas.",
-    statusPendaftaran: "Buka",
-    persyaratanDaftarUlang: "1. Membawa Bukti Kelulusan yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal",
-    tanggalDaftarUlang: "2024-07-15",
-    tanggalPengumuman: "",
+    namaSekolah: "SDN Citapen",
+    alamat: "Jl. Otto Iskandardinata No.12, Citapen, Kec. Tawang, Kota Tasikmalaya, Jawa Barat 46115",
+    telepon: "(0265) 331422",
+    email: "info@sdncitapen.sch.id",
+    deskripsi: "Mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan siap menghadapi tantangan masa depan dengan pendidikan berkualitas di SDN Citapen Tasikmalaya.",
+    statusPendaftaran: "Otomatis",
+    persyaratanDaftarUlang: "1. Membawa Bukti Kelulusan / Kelulusan SPMB (dicetak)\n2. Membawa Dokumen Daftar Ulang Resmi yang diunduh dari website (telah diisi dan ditandatangani)\n3. Fotokopi Kartu Keluarga (2 lembar)\n4. Fotokopi Akta Kelahiran (2 lembar)\n5. Pas Foto Calon Siswa berwarna ukuran 3x4 (4 lembar)\n6. Fotokopi KTP Orang Tua/Wali (masing-masing 2 lembar)\n7. Materai Rp 10.000 (1 lembar) untuk Surat Pernyataan",
+    tanggalDaftarUlang: "2026-07-06",
+    tanggalPengumuman: "2026-07-03",
     logoSekolah: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop",
-    tahunPendaftaran: new Date().getFullYear().toString(),
-    koordinatSekolah: "-6.200000, 106.816666", // Default to Jakarta
+    tahunPendaftaran: "2026",
+    koordinatSekolah: "-7.3259441, 108.2205556", // Real coordinates of SDN Citapen Tasikmalaya
     tanggalCutoffUsia: "", // Tanggal ditetapkan cutoff usia
-    sambutanKepalaSekolah: "Selamat datang di website resmi PPDB SDN Harapan Bangsa. Kami berkomitmen untuk memberikan pelayanan pendidikan terbaik bagi putra-putri Anda. Mari bergabung bersama kami untuk mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan berprestasi.",
+    sambutanKepalaSekolah: "Selamat datang di website resmi SPMB SDN Citapen. Kami berkomitmen untuk memberikan pelayanan pendidikan terbaik bagi putra-putri Anda. Mari bergabung bersama kami untuk mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan berprestasi.",
     fotoKepalaSekolah: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&auto=format&fit=crop",
-    visiSekolah: "Menjadi sekolah dasar unggulan yang menghasilkan lulusan berakhlak mulia, cerdas, terampil, dan berwawasan lingkungan.",
-    misiSekolah: "1. Menyelenggarakan pembelajaran yang aktif, inovatif, kreatif, efektif, dan menyenangkan (PAIKEM).\n2. Menanamkan nilai-nilai agama dan budi pekerti luhur dalam kehidupan sehari-hari.\n3. Mengembangkan potensi, bakat, dan minat siswa melalui kegiatan ekstrakurikuler.\n4. Menciptakan lingkungan sekolah yang bersih, sehat, dan asri.",
+    visiSekolah: "Menjadi sekolah dasar unggulan yang menghasilkan lulusan berakhlak mulia, cerdas, terampil, dan berwawasan lingkungan menuju masa depan gemilang.",
+    misiSekolah: "1. Menyelenggarakan pembelajaran yang aktif, inovatif, kreatif, efektif, dan menyenangkan (PAIKEM).\n2. Menanamkan nilai-nilai keagamaan dan budi pekerti luhur dalam kehidupan sehari-hari.\n3. Mengembangkan potensi, bakat, dan minat siswa melalui berbagai kegiatan ekstrakurikuler.\n4. Menciptakan lingkungan belajar yang bersih, sehat, rindang, aman, dan kondusif.",
     formFields: [
-      { id: "Nama Lengkap", label: "Nama Lengkap", type: "text", required: true },
-      { id: "NIK", label: "NIK", type: "text", required: true },
-      { id: "Tempat Lahir", label: "Tempat Lahir", type: "text", required: true },
-      { id: "Tanggal Lahir", label: "Tanggal Lahir", type: "date", required: true },
-      { id: "Jenis Kelamin", label: "Jenis Kelamin", type: "select", options: ["Laki-laki", "Perempuan"], required: true },
-      { id: "Alamat", label: "Alamat Lengkap", type: "textarea", required: true },
-      { id: "Nama Orang Tua", label: "Nama Orang Tua/Wali", type: "text", required: true },
-      { id: "No HP", label: "No. WhatsApp Aktif", type: "text", required: true },
-      { id: "Foto Siswa", label: "Pas Foto 3x4", type: "file", required: true },
-      { id: "Kartu Keluarga", label: "Kartu Keluarga", type: "file", required: true },
-      { id: "Akta Kelahiran", label: "Akta Kelahiran", type: "file", required: true }
+      { id: "Nama Lengkap", label: "Nama Lengkap", type: "text", required: true, session: 1 },
+      { id: "NIK", label: "NIK", type: "text", required: true, session: 1 },
+      { id: "Tempat Lahir", label: "Tempat Lahir", type: "text", required: true, session: 1 },
+      { id: "Tanggal Lahir", label: "Tanggal Lahir", type: "date", required: true, session: 1 },
+      { id: "Jenis Kelamin", label: "Jenis Kelamin", type: "select", options: ["Laki-laki", "Perempuan"], required: true, session: 1 },
+      { id: "Alamat", label: "Alamat Lengkap", type: "textarea", required: true, session: 1 },
+      { id: "Nama Orang Tua", label: "Nama Orang Tua", type: "text", required: true, session: 2 },
+      { id: "No HP", label: "No. WhatsApp Aktif", type: "text", required: true, session: 2 },
+      { id: "Nama Wali", label: "Nama Wali Siswa (Opsional)", type: "text", required: false, session: 3 },
+      { id: "Foto Siswa", label: "Pas Foto 3x4", type: "file", required: true, session: 4 },
+      { id: "Kartu Keluarga", label: "Kartu Keluarga", type: "file", required: true, session: 4 },
+      { id: "Akta Kelahiran", label: "Akta Kelahiran", type: "file", required: true, session: 4 }
     ],
-    panduanJudul: "Panduan Pendaftaran PPDB",
-    panduanDeskripsi: "Persiapkan dokumen berikut sebelum mulai mengisi formulir pendaftaran.",
+    panduanJudul: "Panduan Pendaftaran SPMB",
+    panduanDeskripsi: "Persiapkan berkas dokumen pribadi sebelum mulai mengisi formulir pendaftaran SPMB online.",
     panduanPeringatan: "Pastikan semua dokumen di-scan atau difoto dengan jelas dan dapat terbaca. Format file yang disarankan adalah JPG, PNG, atau PDF dengan ukuran maksimal 2MB per file.",
     panduanDokumen: [
       { id: "1", icon: "FileDigit", title: "Kartu Keluarga (KK)", description: "Asli atau fotokopi yang dilegalisir. Pastikan NIK dan nama calon siswa tercantum dengan benar." },
@@ -109,11 +111,11 @@ const getInitialMockSettings = (): AppSettings => {
     ],
     panduanAlur: [
       "Siapkan seluruh dokumen persyaratan dalam bentuk file digital (foto/scan).",
-      "Klik tombol 'Mulai Pendaftaran' di bawah atau menu 'Daftar' di navigasi.",
+      "Klik tombol 'Mulai Pendaftaran' di bawah atau menu 'Pendaftaran' di navigasi.",
       "Isi seluruh kolom formulir dengan data yang valid dan sesuai dengan dokumen asli.",
-      "Tandai lokasi rumah Anda di peta yang disediakan untuk perhitungan jarak.",
-      "Unggah dokumen persyaratan pada kolom yang tersedia.",
-      "Kirim formulir dan simpan Nomor Pendaftaran Anda untuk mengecek status kelulusan."
+      "Tandai lokasi rumah pendaftar di peta yang disediakan untuk perhitungan jarak otomatis.",
+      "Unggah berkas dokumen persyaratan pada kolom yang disediakan.",
+      "Kirim formulir pendaftaran dan cetak atau simpan Nomor Pendaftaran SPMB Anda."
     ]
   };
 
@@ -121,6 +123,20 @@ const getInitialMockSettings = (): AppSettings => {
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
+      // Force change to SDN Citapen and new schedule dates if it's the old defaults or contains PPDB strings
+      if (
+        parsed.namaSekolah === "SDN Harapan Bangsa" || 
+        !parsed.namaSekolah || 
+        parsed.panduanJudul?.includes("PPDB") || 
+        !parsed.tanggalDaftarUlang || 
+        parsed.tanggalDaftarUlang === "2024-07-15"
+      ) {
+        localStorage.removeItem('app_settings_cache');
+        try {
+          localStorage.setItem('mockSettings', JSON.stringify(defaultSettings));
+        } catch (inner) {}
+        return defaultSettings;
+      }
       return { ...defaultSettings, ...parsed }; // Merge default settings with parsed local settings
     } catch (e) {
       console.error("Failed to parse mock settings from localStorage", e);
@@ -149,21 +165,23 @@ const getInitialMockData = (): AdminData[] => {
       console.error("Failed to parse mock data from localStorage", e);
     }
   }
-  return [
+  const defaultMockData: AdminData[] = [
     {
       Timestamp: new Date().toISOString(),
-      'No Pendaftaran': "PPDB-2024-001",
+      'No Pendaftaran': "SPMB-2026-001",
       'Nama Lengkap': "Budi Santoso",
       'NIK': "1234567890123456",
-      'Tempat Lahir': "Jakarta",
-      'Tanggal Lahir': "2015-05-10",
+      'Tempat Lahir': "Tasikmalaya",
+      'Tanggal Lahir': "2019-05-10",
       'Jenis Kelamin': "Laki-laki",
-      'Alamat': "Jl. Sudirman No. 1",
+      'Alamat': "Jl. Citapen No. 45, Tasikmalaya",
       'Nama Orang Tua': "Agus Santoso",
       'No HP': "081234567890",
+      'Jarak ke Sekolah (km)': "0.55",
       Status: "Proses"
     }
   ];
+  return defaultMockData;
 };
 
 let mockData: AdminData[] = getInitialMockData();
@@ -177,6 +195,76 @@ const saveMockData = (data: AdminData[]) => {
   }
 };
 
+export interface ScheduledStatus {
+  status: 'Buka' | 'Tutup';
+  info: string;
+}
+
+export function getScheduledStatus(settings: AppSettings | null, currentDate: Date = new Date()): ScheduledStatus {
+  if (!settings) {
+    return { status: 'Tutup', info: 'Memuat data...' };
+  }
+
+  // If status is set to manual Buka/Tutup, respect it
+  if (settings.statusPendaftaran === 'Buka') {
+    return { status: 'Buka', info: 'Pendaftaran SPMB sedang dibuka.' };
+  }
+  if (settings.statusPendaftaran === 'Tutup') {
+    return { status: 'Tutup', info: 'Pendaftaran SPMB saat ini ditutup.' };
+  }
+
+  // Otherwise, default/automatic schedule: June 29-30, 2026 09.00 - 12.00 WIB
+  const t = currentDate.getTime(); // System ISO UTC timestamp
+  
+  // Define timezone target ISO timestamps
+  // June 29, 2026 09:00 WIB is 2026-06-29 02:00:00 UTC
+  // June 29, 2026 12:00 WIB is 2026-06-29 05:00:00 UTC
+  // June 30, 2026 09:00 WIB is 2026-06-30 02:00:00 UTC
+  // June 30, 2026 12:00 WIB is 2026-06-30 05:00:00 UTC
+  const msDay1Start = Date.UTC(2026, 5, 29, 2, 0, 0); // 5 = June
+  const msDay1End = Date.UTC(2026, 5, 29, 5, 0, 0);
+  const msDay2Start = Date.UTC(2026, 5, 30, 2, 0, 0);
+  const msDay2End = Date.UTC(2026, 5, 30, 5, 0, 0);
+
+  if (t < msDay1Start) {
+    return {
+      status: 'Tutup',
+      info: 'Pendaftaran belum dibuka. Pendaftaran akan dibuka secara otomatis pada tanggal 29-30 Juni 2026 pukul 09.00 - 12.00 WIB.'
+    };
+  } else if (t >= msDay1Start && t < msDay1End) {
+    return {
+      status: 'Buka',
+      info: 'Pendaftaran Hari Pertama Sedang Berlangsung (Pukul 09.00 - 12.00 WIB).'
+    };
+  } else if (t >= msDay1End && t < msDay2Start) {
+    return {
+      status: 'Tutup',
+      info: 'Pendaftaran dibuka esok hari tanggal 30 Juni pukul 09.00-12.00.'
+    };
+  } else if (t >= msDay2Start && t < msDay2End) {
+    return {
+      status: 'Buka',
+      info: 'Pendaftaran Hari Kedua Sedang Berlangsung (Pukul 09.00 - 12.00 WIB).'
+    };
+  } else {
+    return {
+      status: 'Tutup',
+      info: 'Maaf pendaftaran sudah ditutup sampai jumpa tahun depan dan tetap semangat.'
+    };
+  }
+}
+
+function safeParseJSON(val: any, fallback: any) {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val !== 'string') return val;
+  try {
+    return JSON.parse(val);
+  } catch (e) {
+    console.error("Failed to parse JSON string:", val, e);
+    return fallback;
+  }
+}
+
 export const getSettings = async (): Promise<AppSettings> => {
   if (!GAS_WEB_APP_URL) {
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -186,9 +274,12 @@ export const getSettings = async (): Promise<AppSettings> => {
     const response = await fetch(`${GAS_WEB_APP_URL}?action=getSettings&t=${Date.now()}`);
     const result = await response.json();
     if (result.status === "success") {
+      const data = result.data;
       return {
-        ...result.data,
-        formFields: typeof result.data.formFields === 'string' ? JSON.parse(result.data.formFields) : result.data.formFields
+        ...data,
+        formFields: safeParseJSON(data.formFields, data.formFields),
+        panduanAlur: safeParseJSON(data.panduanAlur, data.panduanAlur),
+        panduanDokumen: safeParseJSON(data.panduanDokumen, data.panduanDokumen),
       };
     }
     throw new Error(result.message);
@@ -223,14 +314,16 @@ export const updateSettings = async (settings: Partial<AppSettings>) => {
 export const submitRegistration = async (data: RegistrationData) => {
   if (!GAS_WEB_APP_URL) {
     await new Promise(resolve => setTimeout(resolve, 1500));
-    if (mockSettings.statusPendaftaran === 'Tutup') {
-      return { status: "error", message: "Pendaftaran sedang ditutup." };
+    const scheduled = getScheduledStatus(mockSettings);
+    if (scheduled.status === 'Tutup') {
+      return { status: "error", message: scheduled.info };
     }
-    const year = mockSettings.tahunPendaftaran || new Date().getFullYear().toString();
+    let year = mockSettings.tahunPendaftaran || new Date().getFullYear().toString();
+    year = year.replace(/\//g, '-');
     const newEntry: AdminData = {
       ...data,
       Timestamp: new Date().toISOString(),
-      'No Pendaftaran': `PPDB-${year}-${String(mockData.length + 1).padStart(3, '0')}`,
+      'No Pendaftaran': `SPMB-${year}-${String(mockData.length + 1).padStart(3, '0')}`,
       Status: 'Proses'
     };
     saveMockData([...mockData, newEntry]);
@@ -344,7 +437,7 @@ export const checkStatus = async (noPendaftaran: string) => {
 export const loginAdmin = async (username: string, password: string) => {
   if (!GAS_WEB_APP_URL) {
     await new Promise(resolve => setTimeout(resolve, 800));
-    if (username === 'admin' && password === 'admin123') {
+    if (username === 'admin' && password === 'ajayhungkul') {
       return { status: "success" };
     }
     return { status: "error", message: "Username atau password salah" };

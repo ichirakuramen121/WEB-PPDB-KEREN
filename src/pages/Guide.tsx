@@ -28,16 +28,38 @@ const colorMap = {
 export default function Guide() {
   const { settings } = useSettings();
 
-  const judul = settings?.panduanJudul || "Panduan Pendaftaran PPDB";
+  const judul = settings?.panduanJudul || "Panduan Pendaftaran SPMB";
   const deskripsi = settings?.panduanDeskripsi || "Persiapkan dokumen berikut sebelum mulai mengisi formulir pendaftaran.";
   const peringatan = settings?.panduanPeringatan || "Pastikan semua dokumen di-scan atau difoto dengan jelas dan dapat terbaca. Format file yang disarankan adalah JPG, PNG, atau PDF dengan ukuran maksimal 2MB per file.";
-  const dokumen = settings?.panduanDokumen || [
+
+  const rawDokumen = settings?.panduanDokumen;
+  let parsedDokumen: any[] = [];
+  if (Array.isArray(rawDokumen)) {
+    parsedDokumen = rawDokumen;
+  } else if (typeof rawDokumen === 'string') {
+    try {
+      const parsed = JSON.parse(rawDokumen);
+      if (Array.isArray(parsed)) parsedDokumen = parsed;
+    } catch {}
+  }
+  const dokumen = parsedDokumen && parsedDokumen.length > 0 ? parsedDokumen : [
     { id: "1", icon: "FileDigit", title: "Kartu Keluarga (KK)", description: "Asli atau fotokopi yang dilegalisir. Pastikan NIK dan nama calon siswa tercantum dengan benar." },
     { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Dokumen asli atau fotokopi legalisir untuk verifikasi usia dan data diri calon siswa." },
     { id: "3", icon: "FileImage", title: "Pas Foto Terbaru", description: "Pas foto berwarna ukuran 3x4 dengan latar belakang merah atau biru." },
     { id: "4", icon: "FileText", title: "Ijazah / SKHUN (Jika Ada)", description: "Surat Keterangan Lulus atau Ijazah dari jenjang pendidikan sebelumnya (TK/PAUD)." }
   ];
-  const alur = settings?.panduanAlur || [
+
+  const rawAlur = settings?.panduanAlur;
+  let parsedAlur: string[] = [];
+  if (Array.isArray(rawAlur)) {
+    parsedAlur = rawAlur;
+  } else if (typeof rawAlur === 'string') {
+    try {
+      const parsed = JSON.parse(rawAlur);
+      if (Array.isArray(parsed)) parsedAlur = parsed;
+    } catch {}
+  }
+  const alur = parsedAlur && parsedAlur.length > 0 ? parsedAlur : [
     "Siapkan seluruh dokumen persyaratan dalam bentuk file digital (foto/scan).",
     "Klik tombol 'Mulai Pendaftaran' di bawah atau menu 'Daftar' di navigasi.",
     "Isi seluruh kolom formulir dengan data yang valid dan sesuai dengan dokumen asli.",

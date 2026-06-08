@@ -2,10 +2,13 @@ import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Users, Trophy, ChevronRight, CheckCircle2, Calendar, FileText, CheckSquare, AlertCircle } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
+import { getScheduledStatus } from '../services/api';
 
 export default function Home() {
   const { settings } = useSettings();
-  const isClosed = settings?.statusPendaftaran === 'Tutup';
+  const scheduled = getScheduledStatus(settings);
+  const isClosed = scheduled.status === 'Tutup';
+  const displayYear = settings?.tahunPendaftaran || new Date().getFullYear().toString();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -42,13 +45,13 @@ export default function Home() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm mb-8 shadow-sm border ${isClosed ? 'bg-red-100 text-red-700 border-red-200' : 'bg-blue-100 text-blue-700 border-blue-200'}`}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm mb-8 shadow-sm border ${isClosed ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-blue-50 text-blue-800 border-blue-200'}`}
             >
               <span className="relative flex h-3 w-3">
                 {!isClosed && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
-                <span className={`relative inline-flex rounded-full h-3 w-3 ${isClosed ? 'bg-red-500' : 'bg-blue-500'}`}></span>
+                <span className={`relative inline-flex rounded-full h-3 w-3 ${isClosed ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
               </span>
-              {isClosed ? `Pendaftaran PPDB ${new Date().getFullYear()} Telah Ditutup` : `Pendaftaran PPDB ${new Date().getFullYear()} Telah Dibuka`}
+              <span>{scheduled.info}</span>
             </motion.div>
             
             <motion.h1
@@ -57,9 +60,9 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6"
             >
-              Selamat Datang di <br className="hidden md:block" />
+              Membangun Generasi <br className="hidden md:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-500">
-                SPMB SDN Citapen
+                Cerdas & Berkarakter
               </span>
             </motion.h1>
             
@@ -69,7 +72,7 @@ export default function Home() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed"
             >
-              Bergabunglah bersama {settings?.namaSekolah || 'SDN Harapan Bangsa'}. Kami berkomitmen memberikan pendidikan dasar terbaik dengan fasilitas modern dan tenaga pendidik profesional.
+              Bergabunglah bersama {settings?.namaSekolah || 'SDN Citapen'}. Kami berkomitmen memberikan pendidikan dasar terbaik dengan fasilitas modern dan tenaga pendidik profesional.
             </motion.p>
             
             <motion.div
@@ -95,9 +98,9 @@ export default function Home() {
               )}
               <a
                 href="#alur"
-                className="inline-flex justify-center items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-8 py-4 rounded-full text-lg font-semibold transition-all shadow-sm hover:shadow-md"
+                className="inline-flex justify-center items-center gap-2 bg-white hover:bg-slate-55 text-slate-700 border border-slate-200 px-8 py-4 rounded-full text-lg font-semibold transition-all shadow-sm hover:shadow-md"
               >
-                Lihat Alur PPDB
+                Lihat Alur SPMB
               </a>
             </motion.div>
           </div>
@@ -144,6 +147,39 @@ export default function Home() {
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      {/* Jadwal Penting SPMB Section */}
+      <section className="py-16 bg-gradient-to-r from-blue-50 to-indigo-50 border-y border-slate-100 relative z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Jadwal Penting SPMB</h2>
+            <p className="text-slate-600 mt-2">Catat tanggal dan waktu pelaksanaan Seleksi Penerimaan Siswa Baru berikut:</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 hover:shadow-md transition-all relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-2 h-full bg-blue-600"></div>
+              <div className="text-sm font-bold text-blue-600 uppercase mb-2">1. Masa Pendaftaran</div>
+              <h3 className="text-xl font-bold text-slate-900 mb-1">29 - 30 Juni 2026</h3>
+              <p className="text-blue-600 font-semibold text-sm mb-4">Pukul 09.00 - 12.00 WIB</p>
+              <p className="text-slate-600 text-sm leading-relaxed">Pendaftaran berkas dilakukan secara mandiri secara mengisi formulir online di website resmi ini.</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 hover:shadow-md transition-all relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-2 h-full bg-indigo-600"></div>
+              <div className="text-sm font-bold text-indigo-600 uppercase mb-2">2. Pengumuman Kelulusan</div>
+              <h3 className="text-xl font-bold text-slate-900 mb-1">03 Juli 2026</h3>
+              <p className="text-indigo-600 font-semibold text-sm mb-4">Hari Jumat secara online</p>
+              <p className="text-slate-600 text-sm leading-relaxed">Hasil seleksi calon peserta didik diumumkan di portal ini. Silakan masukkan Nomor Pendaftaran Anda.</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 hover:shadow-md transition-all relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-2 h-full bg-emerald-600"></div>
+              <div className="text-sm font-bold text-emerald-600 uppercase mb-2">3. Daftar Ulang</div>
+              <h3 className="text-xl font-bold text-slate-900 mb-1">06 Juli 2026</h3>
+              <p className="text-emerald-600 font-semibold text-sm mb-4">Hari Senin secara offline</p>
+              <p className="text-slate-600 text-sm leading-relaxed">Bagi peserta yang dinyatakan lulus seleksi, WAJIB membawa dokumen & persyaratan daftar ulang ke sekolah.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -213,15 +249,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Alur PPDB */}
+      {/* Alur SPMB */}
       <section id="alur" className="py-24 bg-slate-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=2064&auto=format&fit=crop')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Alur Pendaftaran PPDB</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Alur Pendaftaran SPMB</h2>
             <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-              Ikuti langkah-langkah mudah berikut untuk mendaftarkan putra/putri Anda di SDN Harapan Bangsa.
+              Ikuti langkah-langkah mudah berikut untuk mendaftarkan putra/putri Anda di {settings?.namaSekolah || 'SDN Citapen'}.
             </p>
           </div>
 

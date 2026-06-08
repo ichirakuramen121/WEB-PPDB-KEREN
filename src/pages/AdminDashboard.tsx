@@ -250,7 +250,7 @@ export default function AdminDashboard() {
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Data Pendaftar");
-    XLSX.writeFile(wb, `Data_PPDB_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(wb, `Data_SPMB_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const printCard = (student: AdminData) => {
@@ -262,7 +262,7 @@ export default function AdminDashboard() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.text("KARTU PENDAFTARAN PPDB", 105, 20, { align: "center" });
+    doc.text("KARTU PENDAFTARAN SPMB", 105, 20, { align: "center" });
     doc.setFontSize(14);
     doc.setFont("helvetica", "normal");
     doc.text(settings?.namaSekolah || "Sekolah Dasar", 105, 30, { align: "center" });
@@ -271,53 +271,66 @@ export default function AdminDashboard() {
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     
-    const startY = 60;
+    let startY = 60;
     const lineHeight = 10;
     
     doc.setFont("helvetica", "bold");
-    doc.text("No. Pendaftaran:", 20, startY);
+    doc.text("No. Pendaftaran", 20, startY);
+    doc.text(":", 70, startY);
     doc.setFont("helvetica", "normal");
-    doc.text(student['No Pendaftaran'], 70, startY);
+    doc.text(student['No Pendaftaran'], 75, startY);
+    startY += lineHeight;
 
     doc.setFont("helvetica", "bold");
-    doc.text("Nama Lengkap:", 20, startY + lineHeight);
+    doc.text("Status Kelulusan", 20, startY);
+    doc.text(":", 70, startY);
     doc.setFont("helvetica", "normal");
-    doc.text(getFieldValue(student, 'Nama Lengkap') || '-', 70, startY + lineHeight);
+    doc.text(student.Status, 75, startY);
+    startY += lineHeight;
 
-    doc.setFont("helvetica", "bold");
-    doc.text("NIK:", 20, startY + lineHeight * 2);
-    doc.setFont("helvetica", "normal");
-    doc.text(getFieldValue(student, 'NIK') || '-', 70, startY + lineHeight * 2);
+    settings?.formFields?.forEach(field => {
+      if (field.type !== 'file') {
+        if (startY > 260) {
+          doc.addPage();
+          startY = 20;
+        }
 
-    doc.setFont("helvetica", "bold");
-    doc.text("TTL:", 20, startY + lineHeight * 3);
-    doc.setFont("helvetica", "normal");
-    doc.text(`${getFieldValue(student, 'Tempat Lahir') || '-'}, ${formatDate(getFieldValue(student, 'Tanggal Lahir'))}`, 70, startY + lineHeight * 3);
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Usia:", 20, startY + lineHeight * 4);
-    doc.setFont("helvetica", "normal");
-    doc.text(calculateAge(getFieldValue(student, 'Tanggal Lahir'), settings?.tanggalCutoffUsia), 70, startY + lineHeight * 4);
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Status:", 20, startY + lineHeight * 5);
-    doc.setFont("helvetica", "normal");
-    doc.text(student.Status, 70, startY + lineHeight * 5);
+        doc.setFont("helvetica", "bold");
+        doc.text(field.label, 20, startY);
+        doc.text(":", 70, startY);
+        
+        doc.setFont("helvetica", "normal");
+        let value = student[field.label] || '-';
+        if (field.type === 'date') {
+          value = formatDate(value);
+        }
+        
+        // Handle long text
+        const splitText = doc.splitTextToSize(String(value), 115);
+        
+        if (startY + (lineHeight * splitText.length) > 280) {
+           doc.addPage();
+           startY = 20;
+        }
+        
+        doc.text(splitText, 75, startY);
+        startY += lineHeight * splitText.length;
+      }
+    });
 
     // Footer
+    if (startY > 250) {
+      doc.addPage();
+      startY = 20;
+    }
     doc.setDrawColor(200, 200, 200);
-    doc.line(20, startY + lineHeight * 7, 190, startY + lineHeight * 7);
+    doc.line(20, startY + 10, 190, startY + 10);
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Kartu ini adalah bukti sah pendaftaran PPDB ${settings?.namaSekolah || 'Sekolah'}.`, 105, startY + lineHeight * 8, { align: "center" });
-    doc.text(`Dicetak pada: ${new Date().toLocaleString()}`, 105, startY + lineHeight * 8.5, { align: "center" });
+    doc.text(`Kartu ini adalah bukti sah pendaftaran SPMB ${settings?.namaSekolah || 'Sekolah'}.`, 105, startY + 20, { align: "center" });
+    doc.text(`Dicetak pada: ${new Date().toLocaleString()}`, 105, startY + 27, { align: "center" });
 
-    // Box around everything
-    doc.setDrawColor(37, 99, 235);
-    doc.setLineWidth(1);
-    doc.rect(10, 10, 190, 150);
-
-    doc.save(`Kartu_PPDB_${student['No Pendaftaran']}.pdf`);
+    doc.save(`Kartu_SPMB_${student['No Pendaftaran']}.pdf`);
   };
 
   const filteredData = useMemo(() => {
@@ -356,7 +369,7 @@ export default function AdminDashboard() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Dashboard Admin</h1>
-            <p className={cn("mt-1", isDarkMode ? "text-slate-400" : "text-slate-500")}>Kelola data pendaftaran PPDB {settings?.namaSekolah || 'Sekolah'}</p>
+            <p className={cn("mt-1", isDarkMode ? "text-slate-400" : "text-slate-500")}>Kelola data pendaftaran SPMB {settings?.namaSekolah || 'Sekolah'}</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -673,8 +686,9 @@ export default function AdminDashboard() {
                         onChange={e => setLocalSettings({...localSettings, statusPendaftaran: e.target.value as any})}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       >
-                        <option value="Buka">Buka</option>
-                        <option value="Tutup">Tutup</option>
+                        <option value="Otomatis">Otomatis (Jadwal 29-30 Juni 2026)</option>
+                        <option value="Buka">Buka (Manual)</option>
+                        <option value="Tutup">Tutup (Manual)</option>
                       </select>
                     </div>
                     <div className="md:col-span-2">
@@ -731,7 +745,7 @@ export default function AdminDashboard() {
                         type="text"
                         value={localSettings.tahunPendaftaran || ''}
                         onChange={e => setLocalSettings({...localSettings, tahunPendaftaran: e.target.value})}
-                        placeholder="Contoh: 2024"
+                        placeholder="Contoh: 2026/2027"
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
                     </div>
@@ -891,7 +905,7 @@ export default function AdminDashboard() {
                           value={localSettings.panduanJudul || ''}
                           onChange={e => setLocalSettings({...localSettings, panduanJudul: e.target.value})}
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
-                          placeholder="Panduan Pendaftaran PPDB"
+                          placeholder="Panduan Pendaftaran SPMB"
                         />
                       </div>
                       <div>
@@ -1165,115 +1179,184 @@ export default function AdminDashboard() {
                 )}
 
                 {settingsTab === 'form' && (
-                  <div className="pt-2">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold">Pengaturan Field Formulir</h3>
-                      <button
-                      onClick={() => {
-                        const newFields = [...localSettings.formFields, { id: `Field-${Date.now()}`, label: 'Field Baru', type: 'text' as const, required: false }];
-                        setLocalSettings({...localSettings, formFields: newFields});
-                      }}
-                      className="text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded-md font-medium transition-colors dark:bg-blue-900/30 dark:text-blue-400"
-                    >
-                      + Tambah Field
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {localSettings.formFields.map((field, index) => (
-                      <div key={index} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900/50" : "border-slate-200 bg-slate-50")}>
-                        <div className="md:col-span-3">
-                          <label className="block text-xs font-medium mb-1 opacity-70">ID (Unik)</label>
-                          <input
-                            type="text"
-                            value={field.id}
-                            onChange={e => {
-                              const newFields = [...localSettings.formFields];
-                              newFields[index] = { ...newFields[index], id: e.target.value };
-                              setLocalSettings({...localSettings, formFields: newFields});
-                            }}
-                            className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600" : "bg-white border-slate-300")}
-                          />
-                        </div>
-                        <div className="md:col-span-4">
-                          <label className="block text-xs font-medium mb-1 opacity-70">Label</label>
-                          <input
-                            type="text"
-                            value={field.label}
-                            onChange={e => {
-                              const newFields = [...localSettings.formFields];
-                              newFields[index] = { ...newFields[index], label: e.target.value };
-                              setLocalSettings({...localSettings, formFields: newFields});
-                            }}
-                            className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600" : "bg-white border-slate-300")}
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-xs font-medium mb-1 opacity-70">Tipe</label>
-                          <select
-                            value={field.type}
-                            onChange={e => {
-                              const newFields = [...localSettings.formFields];
-                              newFields[index] = { ...newFields[index], type: e.target.value as any };
-                              setLocalSettings({...localSettings, formFields: newFields});
-                            }}
-                            className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600" : "bg-white border-slate-300")}
-                          >
-                            <option value="text">Text</option>
-                            <option value="number">Number</option>
-                            <option value="date">Date</option>
-                            <option value="select">Select</option>
-                            <option value="textarea">Textarea</option>
-                            <option value="file">File</option>
-                          </select>
-                        </div>
-                        <div className="md:col-span-2 flex items-center h-[38px]">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={field.required}
-                              onChange={e => {
-                                const newFields = [...localSettings.formFields];
-                                newFields[index] = { ...newFields[index], required: e.target.checked };
-                                setLocalSettings({...localSettings, formFields: newFields});
+                  <div className="pt-2 space-y-8">
+                    <div>
+                      <h3 className="text-xl font-bold mb-1">Pengaturan Field Formulir Berdasarkan Sesi</h3>
+                      <p className={cn("text-sm", isDarkMode ? "text-slate-400" : "text-slate-500")}>
+                        Formulir pendaftaran dibagi menjadi 4 sesi. Sesi akan terlewati secara otomatis saat pendaftaran jika tidak berisi field aktif.
+                      </p>
+                    </div>
+
+                    {[
+                      { id: 1, name: 'Sesi 1: Pengisian Data Calon Siswa' },
+                      { id: 2, name: 'Sesi 2: Pengisian Nama Orang Tua Siswa' },
+                      { id: 3, name: 'Sesi 3: Pengisian Nama Wali Siswa' },
+                      { id: 4, name: 'Sesi 4: Upload Berkas' },
+                    ].map((step) => {
+                      const stepFields = (localSettings?.formFields || []).filter(f => {
+                        if (f.session !== undefined) {
+                          return Number(f.session) === step.id;
+                        }
+                        if (f.type === 'file') {
+                          return step.id === 4;
+                        }
+                        const idLower = String(f.id || '').toLowerCase();
+                        const labelLower = String(f.label || '').toLowerCase();
+                        if (idLower.includes('wali') || labelLower.includes('wali')) {
+                          return step.id === 3;
+                        }
+                        if (
+                          idLower.includes('orang tua') || labelLower.includes('orang tua') ||
+                          idLower.includes('ortu') || labelLower.includes('ortu') ||
+                          idLower.includes('bapak') || labelLower.includes('bapak') ||
+                          idLower.includes('ibu') || labelLower.includes('ibu') ||
+                          idLower.includes('hp') || labelLower.includes('hp') ||
+                          idLower.includes('telepon') || labelLower.includes('telepon') ||
+                          idLower.includes('whatsapp') || labelLower.includes('whatsapp')
+                        ) {
+                          return step.id === 2;
+                        }
+                        return step.id === 1;
+                      });
+
+                      return (
+                        <div key={step.id} className={cn("rounded-2xl border p-6", isDarkMode ? "bg-slate-850 border-slate-700" : "bg-white border-slate-200 shadow-sm")}>
+                          <div className="flex justify-between items-center mb-4 pb-2 border-b dark:border-slate-700">
+                            <h4 className="font-bold text-md text-blue-600">{step.name}</h4>
+                            <button
+                              onClick={() => {
+                                const newFields = [...(localSettings?.formFields || []), { id: `Field-${Date.now()}`, label: 'Field Baru', type: (step.id === 4 ? 'file' : 'text') as any, required: false, session: step.id as any }];
+                                setLocalSettings({...localSettings!, formFields: newFields});
                               }}
-                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="text-sm">Wajib</span>
-                          </label>
-                        </div>
-                        <div className="md:col-span-1 flex justify-end">
-                          <button
-                            onClick={() => {
-                              const newFields = localSettings.formFields.filter((_, i) => i !== index);
-                              setLocalSettings({...localSettings, formFields: newFields});
-                            }}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors dark:hover:bg-red-900/20"
-                            title="Hapus Field"
-                          >
-                            <X size={18} />
-                          </button>
-                        </div>
-                        {field.type === 'select' && (
-                          <div className="md:col-span-12 mt-2">
-                            <label className="block text-xs font-medium mb-1 opacity-70">Opsi (Pisahkan dengan koma)</label>
-                            <input
-                              type="text"
-                              value={field.options?.join(', ') || ''}
-                              onChange={e => {
-                                const newFields = [...localSettings.formFields];
-                                newFields[index] = { ...newFields[index], options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) };
-                                setLocalSettings({...localSettings, formFields: newFields});
-                              }}
-                              placeholder="Laki-laki, Perempuan"
-                              className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600" : "bg-white border-slate-300")}
-                            />
+                              className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded-md font-semibold transition-colors dark:bg-blue-900/30 dark:text-blue-400"
+                            >
+                              + Tambah Field ke Sesi {step.id}
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    ))}
+
+                          {stepFields.length === 0 ? (
+                            <p className="text-sm text-slate-500 italic py-4">Tidak ada field khusus di sesi ini (Sesi akan dilewati secara otomatis).</p>
+                          ) : (
+                            <div className="space-y-4">
+                              {stepFields.map((field) => {
+                                const globalIndex = (localSettings?.formFields || []).findIndex(f => f.id === field.id);
+                                if (globalIndex === -1) return null;
+                                return (
+                                  <div key={field.id} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
+                                    <div className="md:col-span-2">
+                                      <label className="block text-xs font-medium mb-1 opacity-70">ID (Unik)</label>
+                                      <input
+                                        type="text"
+                                        value={field.id}
+                                        onChange={e => {
+                                          const newFields = [...(localSettings?.formFields || [])];
+                                          newFields[globalIndex] = { ...newFields[globalIndex], id: e.target.value };
+                                          setLocalSettings({...localSettings!, formFields: newFields});
+                                        }}
+                                        className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
+                                      />
+                                    </div>
+                                    <div className="md:col-span-3">
+                                      <label className="block text-xs font-medium mb-1 opacity-70">Label</label>
+                                      <input
+                                        type="text"
+                                        value={field.label}
+                                        onChange={e => {
+                                          const newFields = [...(localSettings?.formFields || [])];
+                                          newFields[globalIndex] = { ...newFields[globalIndex], label: e.target.value };
+                                          setLocalSettings({...localSettings!, formFields: newFields});
+                                        }}
+                                        className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
+                                      />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                      <label className="block text-xs font-medium mb-1 opacity-70">Tipe</label>
+                                      <select
+                                        value={field.type}
+                                        onChange={e => {
+                                          const newFields = [...(localSettings?.formFields || [])];
+                                          newFields[globalIndex] = { ...newFields[globalIndex], type: e.target.value as any };
+                                          setLocalSettings({...localSettings!, formFields: newFields});
+                                        }}
+                                        className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
+                                      >
+                                        <option value="text">Text</option>
+                                        <option value="number">Number</option>
+                                        <option value="date">Date</option>
+                                        <option value="select">Select</option>
+                                        <option value="textarea">Textarea</option>
+                                        <option value="file">File</option>
+                                      </select>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                      <label className="block text-xs font-medium mb-1 opacity-70">Grup Sesi</label>
+                                      <select
+                                        value={field.session || step.id}
+                                        onChange={e => {
+                                          const newFields = [...(localSettings?.formFields || [])];
+                                          newFields[globalIndex] = { ...newFields[globalIndex], session: parseInt(e.target.value, 10) as any };
+                                          setLocalSettings({...localSettings!, formFields: newFields});
+                                        }}
+                                        className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
+                                      >
+                                        <option value={1}>Sesi 1 (Calon Siswa)</option>
+                                        <option value={2}>Sesi 2 (Orang Tua)</option>
+                                        <option value={3}>Sesi 3 (Wali)</option>
+                                        <option value={4}>Sesi 4 (Berkas)</option>
+                                      </select>
+                                    </div>
+                                    <div className="md:col-span-2 flex items-center h-[38px] pb-2">
+                                      <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={field.required}
+                                          onChange={e => {
+                                            const newFields = [...(localSettings?.formFields || [])];
+                                            newFields[globalIndex] = { ...newFields[globalIndex], required: e.target.checked };
+                                            setLocalSettings({...localSettings!, formFields: newFields});
+                                          }}
+                                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm font-medium">Wajib</span>
+                                      </label>
+                                    </div>
+                                    <div className="md:col-span-1 flex justify-end pb-1">
+                                      <button
+                                        onClick={() => {
+                                          const newFields = (localSettings?.formFields || []).filter(f => f.id !== field.id);
+                                          setLocalSettings({...localSettings!, formFields: newFields});
+                                        }}
+                                        className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors dark:hover:bg-red-900/20"
+                                        title="Hapus Field"
+                                      >
+                                        <X size={18} />
+                                      </button>
+                                    </div>
+                                    {field.type === 'select' && (
+                                      <div className="md:col-span-12 mt-2">
+                                        <label className="block text-xs font-medium mb-1 opacity-70">Opsi (Pisahkan dengan koma)</label>
+                                        <input
+                                          type="text"
+                                          value={field.options?.join(', ') || ''}
+                                          onChange={e => {
+                                            const newFields = [...(localSettings?.formFields || [])];
+                                            newFields[globalIndex] = { ...newFields[globalIndex], options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) };
+                                            setLocalSettings({...localSettings!, formFields: newFields});
+                                          }}
+                                          placeholder="Laki-laki, Perempuan"
+                                          className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
                 )}
 
                 <div className="pt-6 flex justify-end">
