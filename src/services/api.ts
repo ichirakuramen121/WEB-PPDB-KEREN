@@ -55,6 +55,8 @@ export interface AppSettings {
   panduanPeringatan?: string;
   panduanDokumen?: PanduanDokumen[];
   panduanAlur?: string[];
+  isMaintenance?: boolean;
+  maintenanceMessage?: string;
 }
 
 export interface RegistrationData {
@@ -72,6 +74,8 @@ export interface AdminData extends RegistrationData {
 const getInitialMockSettings = (): AppSettings => {
   const defaultSettings: AppSettings = {
     namaSekolah: "SDN Citapen",
+    isMaintenance: false,
+    maintenanceMessage: "Maaf, server sedang mengalami overload penonton/pendaftar yang sangat tinggi. Sistem SPMB SDN Citapen sementara sedang mengalami maintenance untuk optimalisasi kuota server agar tidak down. Silakan coba kembali beberapa menit lagi secara berkala.",
     alamat: "Jl. Otto Iskandardinata No.12, Citapen, Kec. Tawang, Kota Tasikmalaya, Jawa Barat 46115",
     telepon: "(0265) 331422",
     email: "info@sdncitapen.sch.id",

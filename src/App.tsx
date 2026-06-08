@@ -13,6 +13,7 @@ import RegistrationForm from './pages/RegistrationForm';
 import AdminDashboard from './pages/AdminDashboard';
 import CheckStatus from './pages/CheckStatus';
 import AdminLogin from './pages/AdminLogin';
+import MaintenancePage from './pages/MaintenancePage';
 import { useSettings } from './context/SettingsContext';
 
 function RouteHandler() {
@@ -30,6 +31,33 @@ function RouteHandler() {
   return null;
 }
 
+function AppContent() {
+  const { settings } = useSettings();
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin');
+
+  if (settings?.isMaintenance && !isAdminPage) {
+    return <MaintenancePage />;
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
+      <Navbar />
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/panduan" element={<Guide />} />
+          <Route path="/daftar" element={<RegistrationForm />} />
+          <Route path="/cek-kelulusan" element={<CheckStatus />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Routes>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 export default function App() {
   const { isLoading } = useSettings();
 
@@ -45,20 +73,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <RouteHandler />
-      <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
-        <Navbar />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/panduan" element={<Guide />} />
-            <Route path="/daftar" element={<RegistrationForm />} />
-            <Route path="/cek-kelulusan" element={<CheckStatus />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+      <AppContent />
     </BrowserRouter>
   );
 }

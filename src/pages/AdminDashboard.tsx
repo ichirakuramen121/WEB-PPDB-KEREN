@@ -886,6 +886,51 @@ export default function AdminDashboard() {
                       />
                       <p className="text-xs text-slate-500 mt-1">Sebelum tanggal ini, pendaftar akan melihat status "Proses".</p>
                     </div>
+
+                    <div className="md:col-span-2 border-t border-dashed border-slate-700/30 pt-6 mt-4">
+                      <div className={cn("p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4", localSettings.isMaintenance ? "border-amber-500 bg-amber-500/10" : isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50")}>
+                        <div className="space-y-1 max-w-full md:max-w-xl">
+                          <h4 className="font-bold flex items-center gap-1.5 text-slate-900 dark:text-white">
+                            <span className="relative flex h-2 w-2">
+                              {localSettings.isMaintenance && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>}
+                              <span className={cn("relative inline-flex rounded-full h-2 w-2", localSettings.isMaintenance ? "bg-amber-500" : "bg-slate-400")}></span>
+                            </span>
+                            Simulasi Server Down / Mode Maintenance (Trafik SPMB Tinggi)
+                          </h4>
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                            Aktifkan fitur ini jika ingin mensimulasikan server overload atau penonton/pendaftar membludak (seperti pendaftaran SPMB/PPDB crash saat pembukaan). Pengunjung publik akan melihat layar "HTTP 503 Server Overload" dan tidak bisa mendaftar sampai mode ini dinonaktifkan kembali.
+                          </p>
+                        </div>
+                        <div className="flex items-center shrink-0">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!localSettings.isMaintenance}
+                              onChange={e => setLocalSettings({...localSettings, isMaintenance: e.target.checked})}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            <span className="ml-2 text-sm font-semibold select-none text-slate-700 dark:text-slate-300">
+                              {localSettings.isMaintenance ? "AKTIF" : "NONAKTIF"}
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {localSettings.isMaintenance && (
+                        <div className="mt-4 space-y-2">
+                          <label className={cn("block text-sm font-medium", isDarkMode ? "text-slate-300" : "text-slate-700")}>Pesan Kustom Layar Overload / Maintenance</label>
+                          <textarea
+                            value={localSettings.maintenanceMessage || ''}
+                            onChange={e => setLocalSettings({...localSettings, maintenanceMessage: e.target.value})}
+                            rows={3}
+                            placeholder="Tuliskan pesan penjelasan mengapa sistem overload atau sedang dalam pemeliharaan..."
+                            className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                          />
+                          <p className="text-xs text-slate-500">Jika dikosongkan, halaman akan tetap menampilkan pesan bawaan server overload berkapasitas tinggi.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
