@@ -317,7 +317,15 @@ function safeParseJSON(val: any, fallback: any) {
 
 export const getSettings = async (): Promise<AppSettings> => {
   if (!GAS_WEB_APP_URL) {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const response = await fetch("/api/settings");
+      const result = await response.json();
+      if (result.status === "success") {
+        return result.data;
+      }
+    } catch (e) {
+      console.error("Failed to fetch settings from Express API", e);
+    }
     return { ...mockSettings };
   }
   try {
@@ -341,7 +349,20 @@ export const getSettings = async (): Promise<AppSettings> => {
 
 export const updateSettings = async (settings: Partial<AppSettings>) => {
   if (!GAS_WEB_APP_URL) {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const response = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings)
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        saveMockSettings(result.data); // Keep local fallback in sync
+        return result;
+      }
+    } catch (e) {
+      console.error("Failed to update settings in Express API", e);
+    }
     saveMockSettings({ ...mockSettings, ...settings });
     return { status: "success" };
   }
@@ -363,7 +384,21 @@ export const updateSettings = async (settings: Partial<AppSettings>) => {
 
 export const submitRegistration = async (data: RegistrationData) => {
   if (!GAS_WEB_APP_URL) {
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch("/api/registrations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        return result;
+      }
+    } catch (e) {
+      console.error("Failed to submit registration to Express API", e);
+    }
+    
+    // In-memory local fallback if Express API is offline or not responsive
     const scheduled = getScheduledStatus(mockSettings);
     if (scheduled.status === 'Tutup') {
       return { status: "error", message: scheduled.info };
@@ -394,7 +429,15 @@ export const submitRegistration = async (data: RegistrationData) => {
 
 export const getRegistrations = async (): Promise<AdminData[]> => {
   if (!GAS_WEB_APP_URL) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch("/api/registrations");
+      const result = await response.json();
+      if (result.status === "success") {
+        return result.data;
+      }
+    } catch (e) {
+      console.error("Failed to fetch registrations from Express API", e);
+    }
     return [...mockData];
   }
 
@@ -413,7 +456,19 @@ export const getRegistrations = async (): Promise<AdminData[]> => {
 
 export const updateStatus = async (noPendaftaran: string, newStatus: string, alasan?: string) => {
   if (!GAS_WEB_APP_URL) {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const response = await fetch("/api/registrations/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ noPendaftaran, newStatus, alasan })
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        return result;
+      }
+    } catch (e) {
+      console.error("Failed to update status in Express API", e);
+    }
     const index = mockData.findIndex(d => d['No Pendaftaran'] === noPendaftaran);
     if (index !== -1) {
       const newData = [...mockData];
@@ -449,7 +504,19 @@ export const updateStatus = async (noPendaftaran: string, newStatus: string, ala
 
 export const checkStatus = async (noPendaftaran: string) => {
   if (!GAS_WEB_APP_URL) {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const response = await fetch("/api/registrations/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ noPendaftaran })
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        return result;
+      }
+    } catch (e) {
+      console.error("Failed to check status in Express API", e);
+    }
     const student = mockData.find(d => d['No Pendaftaran'] === noPendaftaran);
     if (student) {
       const namaKey = Object.keys(student).find(k => k.toLowerCase().includes('nama')) || 'Nama Lengkap';
@@ -486,7 +553,19 @@ export const checkStatus = async (noPendaftaran: string) => {
 
 export const loginAdmin = async (username: string, password: string) => {
   if (!GAS_WEB_APP_URL) {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        return result;
+      }
+    } catch (e) {
+      console.error("Failed to login in Express API", e);
+    }
     if (username === 'admin' && password === 'ajayhungkul') {
       return { status: "success" };
     }

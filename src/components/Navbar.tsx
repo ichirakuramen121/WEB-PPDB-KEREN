@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { GraduationCap, Menu, X, Settings } from 'lucide-react';
+import { GraduationCap, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -15,7 +15,6 @@ export default function Navbar() {
     { name: 'Panduan', path: '/panduan' },
     { name: 'Pendaftaran', path: '/daftar' },
     { name: 'Cek Kelulusan', path: '/cek-kelulusan' },
-    { name: 'Admin', path: '/admin' },
   ];
 
   return (
@@ -37,7 +36,7 @@ export default function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            {links.filter(link => link.name !== 'Admin').map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
@@ -49,16 +48,6 @@ export default function Navbar() {
                 {link.name}
               </Link>
             ))}
-            <Link
-              to="/admin"
-              className={cn(
-                "p-2 rounded-full transition-colors hover:bg-slate-100 hover:text-blue-600 focus:outline-none",
-                location.pathname === "/admin" ? "text-blue-600" : "text-slate-500"
-              )}
-              title="Dashboard Admin"
-            >
-              <Settings size={20} />
-            </Link>
             <Link
               to="/daftar"
               className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-medium transition-all shadow-md hover:shadow-lg"
@@ -101,11 +90,7 @@ export default function Navbar() {
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   )}
                 >
-                  {link.name === 'Admin' ? (
-                    <span className="flex items-center gap-2">
-                      <Settings size={18} /> Login Admin Portal
-                    </span>
-                  ) : link.name}
+                  {link.name}
                 </Link>
               ))}
             </div>

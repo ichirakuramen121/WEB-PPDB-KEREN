@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, Mail, MapPin, Phone, Settings } from 'lucide-react';
+import { GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
 export default function Footer() {
@@ -31,14 +31,9 @@ export default function Footer() {
             <h3 className="text-white font-semibold mb-4">Tautan Cepat</h3>
             <ul className="space-y-2 text-sm">
               <li><Link to="/" className="hover:text-blue-400 transition-colors">Beranda</Link></li>
-              <li><Link to="/daftar" className="hover:text-blue-400 transition-colors">Pendaftaran SPMB</Link></li>
-              <li>
-                <Link to="/admin" className="hover:text-blue-400 transition-all flex items-center gap-1.5" title="Dashboard Admin">
-                  <span className="flex items-center gap-1 px-2 py-1 bg-slate-800 rounded text-xs text-slate-400 font-medium border border-slate-700/80 hover:text-white">
-                    <Settings size={14} /> Admin Portal
-                  </span>
-                </Link>
-              </li>
+              <li><Link to="/panduan" className="hover:text-blue-400 transition-colors">Panduan Pendaftaran</Link></li>
+              <li><Link to="/daftar" className="hover:text-blue-400 transition-colors">Formulir SPMB</Link></li>
+              <li><Link to="/cek-kelulusan" className="hover:text-blue-400 transition-colors">Cek Hasil Kelulusan</Link></li>
             </ul>
           </div>
           
@@ -61,8 +56,17 @@ export default function Footer() {
           </div>
         </div>
         
-        <div className="mt-12 pt-8 border-t border-slate-800 text-center text-sm text-slate-500 flex flex-col md:flex-row justify-between items-center">
-          <p>&copy; {new Date().getFullYear()} {settings?.namaSekolah || 'SDN Harapan Bangsa'}. Hak Cipta Dilindungi.</p>
+        <div className="mt-12 pt-8 border-t border-slate-800 text-center text-sm text-slate-500 flex flex-col md:flex-row justify-between items-center select-none">
+          <p>
+            <Link 
+              to="/admin/login" 
+              className="hover:text-slate-300 font-extrabold pr-0.5 transition-colors select-none cursor-default inline-block"
+              title="Portal Admin"
+            >
+              ©
+            </Link>{" "}
+            {new Date().getFullYear()} {settings?.namaSekolah || 'SDN Harapan Bangsa'}. Hak Cipta Dilindungi.
+          </p>
           <p className="mt-2 md:mt-0">Sistem SPMB Online Terintegrasi</p>
         </div>
       </div>
