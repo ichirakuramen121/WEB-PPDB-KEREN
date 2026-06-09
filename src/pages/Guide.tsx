@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { FileText, CheckCircle2, AlertCircle, ArrowRight, FileImage, FileBadge, FileDigit } from 'lucide-react';
+import { FileText, CheckCircle2, AlertCircle, ArrowRight, FileImage, FileBadge, FileDigit, Home, Award, School, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 
@@ -8,6 +8,10 @@ const iconMap = {
   FileBadge: FileBadge,
   FileImage: FileImage,
   FileText: FileText,
+  Home: Home,
+  Award: Award,
+  School: School,
+  UserCheck: UserCheck,
 };
 
 const colorClasses = {
@@ -16,6 +20,8 @@ const colorClasses = {
   purple: 'bg-purple-100 text-purple-600',
   amber: 'bg-amber-100 text-amber-600',
   slate: 'bg-slate-100 text-slate-600',
+  indigo: 'bg-indigo-100 text-indigo-600',
+  rose: 'bg-rose-100 text-rose-600',
 };
 
 const colorMap = {
@@ -23,6 +29,10 @@ const colorMap = {
   FileBadge: 'green',
   FileImage: 'purple',
   FileText: 'amber',
+  Home: 'indigo',
+  Award: 'indigo',
+  School: 'purple',
+  UserCheck: 'rose',
 };
 
 export default function Guide() {
@@ -43,10 +53,13 @@ export default function Guide() {
     } catch {}
   }
   const dokumen = parsedDokumen && parsedDokumen.length > 0 ? parsedDokumen : [
-    { id: "1", icon: "FileDigit", title: "Kartu Keluarga (KK)", description: "Asli atau fotokopi yang dilegalisir. Pastikan NIK dan nama calon siswa tercantum dengan benar." },
-    { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Dokumen asli atau fotokopi legalisir untuk verifikasi usia dan data diri calon siswa." },
-    { id: "3", icon: "FileImage", title: "Pas Foto Terbaru", description: "Pas foto berwarna ukuran 3x4 dengan latar belakang merah atau biru." },
-    { id: "4", icon: "FileText", title: "Ijazah / SKHUN (Jika Ada)", description: "Surat Keterangan Lulus atau Ijazah dari jenjang pendidikan sebelumnya (TK/PAUD)." }
+    { id: "1", icon: "FileText", title: "Kartu Keluarga (Wajib)", description: "Scan Kartu Keluarga (KK) asli secara utuh dan jelas." },
+    { id: "2", icon: "FileBadge", title: "Akta Kelahiran (Wajib)", description: "Scan Akta Kelahiran asli secara utuh untuk verifikasi tanggal lahir." },
+    { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili asli bagi pendaftar jalur zonasi luar daerah." },
+    { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) dari TK/RA." },
+    { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Sertifikat atau Piagam Penghargaan prestasi akademik/non-akademik." },
+    { id: "6", icon: "FileDigit", title: "NISN (Opsional)", description: "Scan Surat Keterangan atau bukti kepemilikan NISN jika ada." },
+    { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan Surat Keputusan Mutasi/Pindahan Tugas Orang Tua dari instansi terkait." }
   ];
 
   const rawAlur = settings?.panduanAlur;

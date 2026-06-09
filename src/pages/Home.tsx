@@ -1,6 +1,7 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Users, Trophy, ChevronRight, CheckCircle2, Calendar, FileText, CheckSquare, AlertCircle } from 'lucide-react';
+import { BookOpen, Users, Trophy, ChevronRight, CheckCircle2, Calendar, FileText, CheckSquare, AlertCircle, Clock } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import { getScheduledStatus } from '../services/api';
 
@@ -9,6 +10,37 @@ export default function Home() {
   const scheduled = getScheduledStatus(settings);
   const isClosed = scheduled.status === 'Tutup';
   const displayYear = settings?.tahunPendaftaran || new Date().getFullYear().toString();
+
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
+
+  useEffect(() => {
+    const targetDateStr = settings?.tanggalPembukaanPendaftaran || "2026-06-29T09:00";
+    const target = new Date(targetDateStr);
+
+    const updateTimer = () => {
+      const now = new Date();
+      const difference = target.getTime() - now.getTime();
+
+      if (difference <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
+      } else {
+        const d = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const h = Math.floor((difference / (1000 * 60 * 60)) % 24);
+        const m = Math.floor((difference / 1000 / 60) % 60);
+        const s = Math.floor((difference / 1000) % 60);
+        setTimeLeft({ days: d, hours: h, minutes: m, seconds: s, expired: false });
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [settings?.tanggalPembukaanPendaftaran]);
+
+  // Split info text for nicer display
+  const infoParts = scheduled.info.includes('Pendaftaran belum dibuka. Pendaftaran akan')
+    ? ['Pendaftaran Belum Dibuka', scheduled.info.substring(scheduled.info.indexOf('Pendaftaran akan'))]
+    : scheduled.info.split('. ');
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -45,13 +77,20 @@ export default function Home() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm mb-8 shadow-sm border ${isClosed ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-blue-50 text-blue-800 border-blue-200'}`}
+              className="flex flex-col items-center gap-2.5 mb-8 max-w-2xl mx-auto"
             >
-              <span className="relative flex h-3 w-3">
-                {!isClosed && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
-                <span className={`relative inline-flex rounded-full h-3 w-3 ${isClosed ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
-              </span>
-              <span>{scheduled.info}</span>
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm shadow-sm border ${isClosed ? 'bg-amber-100/90 text-amber-800 border-amber-200' : 'bg-blue-50 text-blue-800 border-blue-200'}`}>
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  {!isClosed && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>}
+                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isClosed ? 'bg-amber-500' : 'bg-blue-500'}`}></span>
+                </span>
+                <span>{infoParts[0]}</span>
+              </div>
+              {infoParts[1] && (
+                <p className="text-sm text-amber-850 bg-amber-50/40 px-4 py-2 rounded-2xl border border-amber-200/60 font-medium leading-relaxed max-w-lg text-center shadow-xs">
+                  {infoParts[1]}
+                </p>
+              )}
             </motion.div>
             
             <motion.h1
@@ -70,10 +109,73 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed"
+              className="text-lg md:text-xl text-slate-600 mb-6 leading-relaxed"
             >
               Bergabunglah bersama {settings?.namaSekolah || 'SDN Citapen'}. Kami berkomitmen memberikan pendidikan dasar terbaik dengan fasilitas modern dan tenaga pendidik profesional.
             </motion.p>
+            
+            {/* Hitung Mundur Pembukaan Pendaftaran */}
+            {!timeLeft.expired && isClosed && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.25 }}
+                className="max-w-xl mx-auto my-8 bg-gradient-to-b from-slate-900 to-slate-800 text-white rounded-3xl p-6 shadow-xl border border-slate-700/50 relative overflow-hidden"
+              >
+                <div className="absolute -top-12 -left-12 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#00BCD4] mb-4 select-none">
+                    <Clock size={16} className="animate-pulse text-[#00BCD4]" />
+                    HITUNG MUNDUR PEMBUKAAN PENDAFTARAN
+                  </div>
+
+                  <div className="flex justify-center items-center gap-4 sm:gap-6">
+                    {/* Days */}
+                    <div className="flex flex-col items-center">
+                      <div className="bg-slate-800/80 w-16 sm:w-20 h-16 sm:h-20 rounded-2xl flex items-center justify-center font-mono text-xl sm:text-3xl font-extrabold text-white border border-slate-700 shadow-inner">
+                        {String(timeLeft.days).padStart(2, '0')}
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-bold text-slate-400 mt-2 tracking-wider uppercase">Hari</span>
+                    </div>
+
+                    {/* Separator */}
+                    <div className="text-xl sm:text-2xl font-bold text-slate-600 mb-6">:</div>
+
+                    {/* Hours */}
+                    <div className="flex flex-col items-center">
+                      <div className="bg-slate-800/80 w-16 sm:w-20 h-16 sm:h-20 rounded-2xl flex items-center justify-center font-mono text-xl sm:text-3xl font-extrabold text-white border border-slate-700 shadow-inner">
+                        {String(timeLeft.hours).padStart(2, '0')}
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-bold text-slate-400 mt-2 tracking-wider uppercase">Jam</span>
+                    </div>
+
+                    {/* Separator */}
+                    <div className="text-xl sm:text-2xl font-bold text-slate-600 mb-6">:</div>
+
+                    {/* Minutes */}
+                    <div className="flex flex-col items-center">
+                      <div className="bg-slate-800/80 w-16 sm:w-20 h-16 sm:h-20 rounded-2xl flex items-center justify-center font-mono text-xl sm:text-3xl font-extrabold text-white border border-slate-700 shadow-inner">
+                        {String(timeLeft.minutes).padStart(2, '0')}
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-bold text-slate-400 mt-2 tracking-wider uppercase">Menit</span>
+                    </div>
+
+                    {/* Separator */}
+                    <div className="text-xl sm:text-2xl font-bold text-slate-600 mb-6">:</div>
+
+                    {/* Seconds */}
+                    <div className="flex flex-col items-center">
+                      <div className="bg-slate-800/80 w-16 sm:w-20 h-16 sm:h-20 rounded-2xl flex items-center justify-center font-mono text-xl sm:text-3xl font-extrabold text-amber-400 border border-slate-700 shadow-inner">
+                        {String(timeLeft.seconds).padStart(2, '0')}
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-bold text-slate-400 mt-2 tracking-wider uppercase">Detik</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
             
             <motion.div
               initial={{ opacity: 0, y: 20 }}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, CheckCircle, XCircle, Clock, Loader2, ArrowLeft, Printer, Download } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Clock, Loader2, ArrowLeft, Printer, Download, ArrowRight, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { checkStatus } from '../services/api';
 import { cn } from '../lib/utils';
@@ -374,6 +374,41 @@ export default function CheckStatus() {
               <div className="text-sm text-slate-700 whitespace-pre-line space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-100">
                 {settings?.persyaratanDaftarUlang || '1. Membawa Bukti Kelulusan yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal'}
               </div>
+
+              {settings?.googleDriveDaftarUlang && (
+                <div className="mt-4 p-4 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-900">
+                  <h5 className="font-bold flex items-center gap-2 text-indigo-850 text-sm">
+                    <Download size={16} /> Berkas Formulir Google Drive
+                  </h5>
+                  <p className="text-xs text-indigo-700 mt-1">
+                    Silakan unduh dokumen/formulir tambahan resmi di bawah melalui Google Drive, cetak mandiri di rumah, dan bawa saat melakukan pendaftaran ulang fisik ke sekolah:
+                  </p>
+                  <a
+                    href={settings.googleDriveDaftarUlang}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3.5 inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shadow-sm"
+                  >
+                    Buka Google Drive Berkas Resmi <ArrowRight size={14} />
+                  </a>
+                </div>
+              )}
+
+              {settings?.isRapatAktif && (
+                <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50/50 text-slate-800">
+                  <h5 className="font-bold flex items-center gap-2 text-amber-800 text-sm">
+                    <Calendar size={16} /> {settings.rapatJudul || "Pemberitahuan Rapat Orang Tua"}
+                  </h5>
+                  <div className="text-xs text-slate-705 space-y-1 mt-1.5 leading-relaxed">
+                    <p>{settings.rapatDeskripsi}</p>
+                    <div className="pt-2 select-none font-semibold text-slate-800 grid grid-cols-1 gap-1 border-t border-amber-200/50 mt-2">
+                       <div>📅 <b>Hari / Tanggal:</b> {settings.rapatTanggal || "Sabtu, 11 Juli 2026"}</div>
+                       <div>⏰ <b>Waktu:</b> {settings.rapatWaktu || "08:00 WIB s.d Selesai"}</div>
+                       <div>📍 <b>Tempat:</b> {settings.rapatTempat || "Aula SDN Citapen"}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-3">

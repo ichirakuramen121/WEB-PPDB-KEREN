@@ -772,11 +772,23 @@ export default function AdminDashboard() {
                         onChange={e => setLocalSettings({...localSettings, statusPendaftaran: e.target.value as any})}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       >
-                        <option value="Otomatis">Otomatis (Jadwal 29-30 Juni 2026)</option>
+                        <option value="Otomatis">Otomatis (Berdasarkan Jadwal)</option>
                         <option value="Buka">Buka (Manual)</option>
                         <option value="Tutup">Tutup (Manual)</option>
                       </select>
                     </div>
+                    {localSettings.statusPendaftaran === 'Otomatis' && (
+                      <div className="md:col-span-2 bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+                        <label className={cn("block text-sm font-semibold mb-1", isDarkMode ? "text-blue-300" : "text-blue-700")}>Tanggal & Waktu Pembukaan Pendaftaran (Otomatis)</label>
+                        <input
+                          type="datetime-local"
+                          value={localSettings.tanggalPembukaanPendaftaran || '2026-06-29T09:00'}
+                          onChange={e => setLocalSettings({...localSettings, tanggalPembukaanPendaftaran: e.target.value})}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                        <p className="text-xs text-slate-500 mt-1">Tanggal ini digunakan sebagai acuan hitung mundur (countdown) di Beranda dan pendaftaran otomatis akan terbuka tepat pada tanggal/waktu tersebut.</p>
+                      </div>
+                    )}
                     <div className="md:col-span-2">
                       <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Alamat</label>
                       <textarea
@@ -952,10 +964,104 @@ export default function AdminDashboard() {
                         <textarea
                           value={localSettings.persyaratanDaftarUlang || ''}
                           onChange={e => setLocalSettings({...localSettings, persyaratanDaftarUlang: e.target.value})}
-                          rows={5}
+                          rows={4}
                           placeholder="1. Syarat pertama&#10;2. Syarat kedua"
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                         />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Link Google Drive Berkas Daftar Ulang (Opsional)</label>
+                        <input
+                          type="url"
+                          value={localSettings.googleDriveDaftarUlang || ''}
+                          onChange={e => setLocalSettings({...localSettings, googleDriveDaftarUlang: e.target.value})}
+                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                          placeholder="Masukkan tautan Google Drive berisi berkas/formulir pendaftaran ulang resmi..."
+                        />
+                        <p className="text-xs text-slate-500 mt-1">Siswa yang Lulus akan melihat tombol untuk mengunduh dokumen langsung dari Google Drive Anda untuk dicetak.</p>
+                      </div>
+
+                      <div className="md:col-span-2 border-t border-dashed border-slate-200 dark:border-slate-800 pt-6 mt-4">
+                        <div className={cn("p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4", localSettings.isRapatAktif ? "border-green-500 bg-green-500/10" : isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-50")}>
+                          <div className="space-y-1 max-w-full md:max-w-xl">
+                            <h4 className="font-bold flex items-center gap-1.5 text-slate-900 dark:text-white">
+                              Pengumuman Rapat Orang Tua / Wali Calon Siswa Baru
+                            </h4>
+                            <p className="text-xs text-slate-400 leading-relaxed">
+                              Aktifkan fitur ini jika ingin mengumumkan jadwal koordinasi dan rapat orang tua menjelang masuk sekolah. Informasi ini akan ditampilkan di Beranda dan menu Cek Kelulusan.
+                            </p>
+                          </div>
+                          <div className="flex items-center shrink-0">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!localSettings.isRapatAktif}
+                                onChange={e => setLocalSettings({...localSettings, isRapatAktif: e.target.checked})}
+                                className="sr-only peer"
+                              />
+                              <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                              <span className="ml-2 text-sm font-semibold select-none text-slate-700 dark:text-slate-300">
+                                {localSettings.isRapatAktif ? "AKTIF" : "NONAKTIF"}
+                              </span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {localSettings.isRapatAktif && (
+                          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="md:col-span-2">
+                              <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Judul Pengumuman Rapat</label>
+                              <input
+                                type="text"
+                                value={localSettings.rapatJudul || ''}
+                                onChange={e => setLocalSettings({...localSettings, rapatJudul: e.target.value})}
+                                className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                                placeholder="Contoh: Pengumuman Rapat Orang Tua / Wali Calon Siswa Baru"
+                              />
+                            </div>
+                            <div>
+                              <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Hari / Tanggal Rapat</label>
+                              <input
+                                type="text"
+                                value={localSettings.rapatTanggal || ''}
+                                onChange={e => setLocalSettings({...localSettings, rapatTanggal: e.target.value})}
+                                className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                                placeholder="Contoh: Sabtu, 11 Juli 2026"
+                              />
+                            </div>
+                            <div>
+                              <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Waktu Rapat</label>
+                              <input
+                                type="text"
+                                value={localSettings.rapatWaktu || ''}
+                                onChange={e => setLocalSettings({...localSettings, rapatWaktu: e.target.value})}
+                                className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                                placeholder="Contoh: 08:00 WIB s.d Selesai"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tempat Rapat</label>
+                              <input
+                                type="text"
+                                value={localSettings.rapatTempat || ''}
+                                onChange={e => setLocalSettings({...localSettings, rapatTempat: e.target.value})}
+                                className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                                placeholder="Contoh: Aula Serbaguna SDN Citapen Tasikmalaya"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Deskripsi / Himbauan Rapat</label>
+                              <textarea
+                                value={localSettings.rapatDeskripsi || ''}
+                                onChange={e => setLocalSettings({...localSettings, rapatDeskripsi: e.target.value})}
+                                rows={3}
+                                className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                                placeholder="Himbauan atau informasi tambahan untuk orang tua murid..."
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

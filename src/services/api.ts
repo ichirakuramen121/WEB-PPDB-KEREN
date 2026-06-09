@@ -16,7 +16,7 @@ export interface FormField {
 
 export interface PanduanDokumen {
   id: string;
-  icon: 'FileDigit' | 'FileBadge' | 'FileImage' | 'FileText';
+  icon: 'FileDigit' | 'FileBadge' | 'FileImage' | 'FileText' | 'Home' | 'Award' | 'School' | 'UserCheck';
   title: string;
   description: string;
 }
@@ -57,6 +57,14 @@ export interface AppSettings {
   panduanAlur?: string[];
   isMaintenance?: boolean;
   maintenanceMessage?: string;
+  googleDriveDaftarUlang?: string;
+  isRapatAktif?: boolean;
+  rapatJudul?: string;
+  rapatTanggal?: string;
+  rapatWaktu?: string;
+  rapatTempat?: string;
+  rapatDeskripsi?: string;
+  tanggalPembukaanPendaftaran?: string;
 }
 
 export interface RegistrationData {
@@ -110,10 +118,13 @@ const getInitialMockSettings = (): AppSettings => {
     panduanDeskripsi: "Persiapkan berkas dokumen pribadi sebelum mulai mengisi formulir pendaftaran SPMB online.",
     panduanPeringatan: "Pastikan semua dokumen di-scan atau difoto dengan jelas dan dapat terbaca. Format file yang disarankan adalah JPG, PNG, atau PDF dengan ukuran maksimal 2MB per file.",
     panduanDokumen: [
-      { id: "1", icon: "FileDigit", title: "Kartu Keluarga (KK)", description: "Asli atau fotokopi yang dilegalisir. Pastikan NIK dan nama calon siswa tercantum dengan benar." },
-      { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Dokumen asli atau fotokopi legalisir untuk verifikasi usia dan data diri calon siswa." },
-      { id: "3", icon: "FileImage", title: "Pas Foto Terbaru", description: "Pas foto berwarna ukuran 3x4 dengan latar belakang merah atau biru." },
-      { id: "4", icon: "FileText", title: "Ijazah / SKHUN (Jika Ada)", description: "Surat Keterangan Lulus atau Ijazah dari jenjang pendidikan sebelumnya (TK/PAUD)." }
+      { id: "1", icon: "FileText", title: "Kartu Keluarga (Wajib)", description: "Scan Kartu Keluarga (KK) asli secara utuh dan jelas." },
+      { id: "2", icon: "FileBadge", title: "Akta Kelahiran (Wajib)", description: "Scan Akta Kelahiran asli secara utuh untuk verifikasi tanggal lahir." },
+      { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili asli bagi pendaftar jalur zonasi luar daerah." },
+      { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) dari TK/RA." },
+      { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Sertifikat atau Piagam Penghargaan prestasi akademik/non-akademik." },
+      { id: "6", icon: "FileDigit", title: "NISN (Opsional)", description: "Scan Surat Keterangan atau bukti kepemilikan NISN jika ada." },
+      { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan Surat Keputusan Mutasi/Pindahan Tugas Orang Tua dari instansi terkait." }
     ],
     panduanAlur: [
       "Siapkan seluruh dokumen persyaratan dalam bentuk file digital (foto/scan).",
@@ -122,7 +133,15 @@ const getInitialMockSettings = (): AppSettings => {
       "Tandai lokasi rumah pendaftar di peta yang disediakan untuk perhitungan jarak otomatis.",
       "Unggah berkas dokumen persyaratan pada kolom yang disediakan.",
       "Kirim formulir pendaftaran dan cetak atau simpan Nomor Pendaftaran SPMB Anda."
-    ]
+    ],
+    googleDriveDaftarUlang: "https://drive.google.com",
+    isRapatAktif: true,
+    rapatJudul: "Pengumuman Rapat Orang Tua / Wali Calon Siswa Baru",
+    rapatTanggal: "Sabtu, 11 Juli 2026",
+    rapatWaktu: "08:00 WIB s.d Selesai",
+    rapatTempat: "Aula Serbaguna SDN Citapen Tasikmalaya",
+    rapatDeskripsi: "Diharapkan kehadiran Bapak/Ibu Orang Tua/Wali Calon Siswa yang telah dinyatakan Diterima/Lulus untuk menghadiri Rapat Koordinasi Awal Tahun Pelajaran menjelang pelaksanaan Kegiatan Belajar Mengajar (KBM). Kehadiran bersifat penting.",
+    tanggalPembukaanPendaftaran: "2026-06-29T09:00"
   };
 
   const stored = localStorage.getItem('mockSettings');
@@ -135,7 +154,9 @@ const getInitialMockSettings = (): AppSettings => {
         !parsed.namaSekolah || 
         parsed.panduanJudul?.includes("PPDB") || 
         !parsed.tanggalDaftarUlang || 
-        parsed.tanggalDaftarUlang === "2024-07-15"
+        parsed.tanggalDaftarUlang === "2024-07-15" ||
+        !parsed.panduanDokumen ||
+        parsed.panduanDokumen.length < 5
       ) {
         localStorage.removeItem('app_settings_cache');
         try {
@@ -219,23 +240,44 @@ export function getScheduledStatus(settings: AppSettings | null, currentDate: Da
     return { status: 'Tutup', info: 'Pendaftaran SPMB saat ini ditutup.' };
   }
 
-  // Otherwise, default/automatic schedule: June 29-30, 2026 09.00 - 12.00 WIB
+  // Otherwise, default/automatic schedule based on settings
   const t = currentDate.getTime(); // System ISO UTC timestamp
   
-  // Define timezone target ISO timestamps
-  // June 29, 2026 09:00 WIB is 2026-06-29 02:00:00 UTC
-  // June 29, 2026 12:00 WIB is 2026-06-29 05:00:00 UTC
-  // June 30, 2026 09:00 WIB is 2026-06-30 02:00:00 UTC
-  // June 30, 2026 12:00 WIB is 2026-06-30 05:00:00 UTC
-  const msDay1Start = Date.UTC(2026, 5, 29, 2, 0, 0); // 5 = June
-  const msDay1End = Date.UTC(2026, 5, 29, 5, 0, 0);
-  const msDay2Start = Date.UTC(2026, 5, 30, 2, 0, 0);
-  const msDay2End = Date.UTC(2026, 5, 30, 5, 0, 0);
+  // Calculate baseTime from settings or fallback to default June 29, 2026, 09:00 WIB
+  let baseTime = Date.UTC(2026, 5, 29, 2, 0, 0); // Default to UTC for June 29, 2026 09:00 WIB (02:00 UTC)
+  let formattedDateStr = "29-30 Juni 2026 pukul 09.00 - 12.00 WIB";
+  let hasCustomDate = false;
+
+  if (settings.tanggalPembukaanPendaftaran) {
+    const d = new Date(settings.tanggalPembukaanPendaftaran);
+    if (!isNaN(d.getTime())) {
+      baseTime = d.getTime();
+      hasCustomDate = true;
+      const options: Intl.DateTimeFormatOptions = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      try {
+        formattedDateStr = d.toLocaleDateString('id-ID', options) + " WIB";
+      } catch {
+        formattedDateStr = d.toLocaleString();
+      }
+    }
+  }
+
+  const msDay1Start = baseTime;
+  const msDay1End = baseTime + (3 * 60 * 60 * 1000); // 3 hours duration
+  const msDay2Start = baseTime + (24 * 60 * 60 * 1000); // Next day same time
+  const msDay2End = msDay2Start + (3 * 60 * 60 * 1000); // 3 hours duration
 
   if (t < msDay1Start) {
     return {
       status: 'Tutup',
-      info: 'Pendaftaran belum dibuka. Pendaftaran akan dibuka secara otomatis pada tanggal 29-30 Juni 2026 pukul 09.00 - 12.00 WIB.'
+      info: `Pendaftaran belum dibuka. Pendaftaran akan dibuka secara otomatis pada tanggal ${formattedDateStr}.`
     };
   } else if (t >= msDay1Start && t < msDay1End) {
     return {
@@ -245,7 +287,9 @@ export function getScheduledStatus(settings: AppSettings | null, currentDate: Da
   } else if (t >= msDay1End && t < msDay2Start) {
     return {
       status: 'Tutup',
-      info: 'Pendaftaran dibuka esok hari tanggal 30 Juni pukul 09.00-12.00.'
+      info: hasCustomDate 
+        ? 'Pendaftaran hari ke-1 selesai. Pendaftaran hari ke-2 akan dibuka esok hari.'
+        : 'Pendaftaran dibuka esok hari tanggal 30 Juni pukul 09.00-12.00.'
     };
   } else if (t >= msDay2Start && t < msDay2End) {
     return {
