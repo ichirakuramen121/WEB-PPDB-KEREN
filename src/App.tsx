@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import CheckStatus from './pages/CheckStatus';
 import AdminLogin from './pages/AdminLogin';
 import MaintenancePage from './pages/MaintenancePage';
+import RapatDetail from './pages/RapatDetail';
 import { useSettings } from './context/SettingsContext';
 
 function RouteHandler() {
@@ -49,6 +50,7 @@ function AppContent() {
           <Route path="/panduan" element={<Guide />} />
           <Route path="/daftar" element={<RegistrationForm />} />
           <Route path="/cek-kelulusan" element={<CheckStatus />} />
+          <Route path="/rapat-orang-tua" element={<RapatDetail />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
         </Routes>

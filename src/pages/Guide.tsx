@@ -53,13 +53,13 @@ export default function Guide() {
     } catch {}
   }
   const dokumen = parsedDokumen && parsedDokumen.length > 0 ? parsedDokumen : [
-    { id: "1", icon: "FileText", title: "Kartu Keluarga (Wajib)", description: "Scan Kartu Keluarga (KK) asli secara utuh dan jelas." },
-    { id: "2", icon: "FileBadge", title: "Akta Kelahiran (Wajib)", description: "Scan Akta Kelahiran asli secara utuh untuk verifikasi tanggal lahir." },
-    { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili asli bagi pendaftar jalur zonasi luar daerah." },
-    { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) dari TK/RA." },
-    { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Sertifikat atau Piagam Penghargaan prestasi akademik/non-akademik." },
-    { id: "6", icon: "FileDigit", title: "NISN (Opsional)", description: "Scan Surat Keterangan atau bukti kepemilikan NISN jika ada." },
-    { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan Surat Keputusan Mutasi/Pindahan Tugas Orang Tua dari instansi terkait." }
+    { id: "1", icon: "FileText", title: "Kartu Keluarga (Wajib)", description: "Dokumen Kartu Keluarga (KK) asli harus di-scan secara jelas dan utuh." },
+    { id: "2", icon: "FileBadge", title: "Akta Kelahiran (Wajib)", description: "Dokumen Akta Kelahiran asli harus di-scan secara jelas dan utuh." },
+    { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Dokumen Surat Keterangan Domisili asli harus di-scan secara jelas dan utuh bagi pendaftar luar daerah." },
+    { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Dokumen asli Ijazah atau Surat Keterangan Lulus TK/RA harus di-scan secara jelas." },
+    { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Sertifikat atau Piagam Penghargaan prestasi asli harus di-scan secara jelas." },
+    { id: "6", icon: "FileDigit", title: "NISN (Opsional)", description: "Bukti cetak lembar nomor induk siswa nasional (NISN) resmi harus di-scan secara jelas." },
+    { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Surat keputusan (SK) mutasi perpindahan tugas orang tua asli harus di-scan secara jelas." }
   ];
 
   const rawAlur = settings?.panduanAlur;

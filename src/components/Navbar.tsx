@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { GraduationCap, Menu, X } from 'lucide-react';
+import { GraduationCap, Menu, X, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -30,12 +30,12 @@ export default function Navbar() {
               </div>
             )}
             <span className="font-bold text-xl tracking-tight text-slate-900">
-              {settings?.namaSekolah || 'SDN Harapan Bangsa'}
+              {settings?.namaSekolah || 'SDN Citapen'}
             </span>
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6">
             {links.map((link) => (
               <Link
                 key={link.path}

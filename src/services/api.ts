@@ -118,13 +118,13 @@ const getInitialMockSettings = (): AppSettings => {
     panduanDeskripsi: "Persiapkan berkas dokumen pribadi sebelum mulai mengisi formulir pendaftaran SPMB online.",
     panduanPeringatan: "Pastikan semua dokumen di-scan atau difoto dengan jelas dan dapat terbaca. Format file yang disarankan adalah JPG, PNG, atau PDF dengan ukuran maksimal 2MB per file.",
     panduanDokumen: [
-      { id: "1", icon: "FileText", title: "Kartu Keluarga (Wajib)", description: "Scan Kartu Keluarga (KK) asli secara utuh dan jelas." },
-      { id: "2", icon: "FileBadge", title: "Akta Kelahiran (Wajib)", description: "Scan Akta Kelahiran asli secara utuh untuk verifikasi tanggal lahir." },
-      { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili asli bagi pendaftar jalur zonasi luar daerah." },
-      { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) dari TK/RA." },
-      { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Sertifikat atau Piagam Penghargaan prestasi akademik/non-akademik." },
-      { id: "6", icon: "FileDigit", title: "NISN (Opsional)", description: "Scan Surat Keterangan atau bukti kepemilikan NISN jika ada." },
-      { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan Surat Keputusan Mutasi/Pindahan Tugas Orang Tua dari instansi terkait." }
+      { id: "1", icon: "FileText", title: "Kartu Keluarga (Wajib)", description: "Dokumen Kartu Keluarga (KK) asli harus di-scan secara jelas dan utuh." },
+      { id: "2", icon: "FileBadge", title: "Akta Kelahiran (Wajib)", description: "Dokumen Akta Kelahiran asli harus di-scan secara jelas dan utuh." },
+      { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Dokumen Surat Keterangan Domisili asli harus di-scan secara jelas dan utuh bagi pendaftar luar daerah." },
+      { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Dokumen asli Ijazah atau Surat Keterangan Lulus TK/RA harus di-scan secara jelas." },
+      { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Sertifikat atau Piagam Penghargaan prestasi asli harus di-scan secara jelas." },
+      { id: "6", icon: "FileDigit", title: "NISN (Opsional)", description: "Bukti cetak lembar nomor induk siswa nasional (NISN) resmi harus di-scan secara jelas." },
+      { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Surat keputusan (SK) mutasi perpindahan tugas orang tua asli harus di-scan secara jelas." }
     ],
     panduanAlur: [
       "Siapkan seluruh dokumen persyaratan dalam bentuk file digital (foto/scan).",
@@ -156,7 +156,8 @@ const getInitialMockSettings = (): AppSettings => {
         !parsed.tanggalDaftarUlang || 
         parsed.tanggalDaftarUlang === "2024-07-15" ||
         !parsed.panduanDokumen ||
-        parsed.panduanDokumen.length < 5
+        parsed.panduanDokumen.length < 5 ||
+        !parsed.panduanDokumen[2]?.description.includes("harus di-scan secara jelas dan utuh")
       ) {
         localStorage.removeItem('app_settings_cache');
         try {
@@ -348,6 +349,15 @@ export const getSettings = async (): Promise<AppSettings> => {
           (merged as any)[key] = (defaults as any)[key];
         }
       }
+
+      // Explicitly coerce boolean flags that can come as strings from GAS Web App / Google Sheets
+      if (merged.hasOwnProperty('isMaintenance')) {
+        merged.isMaintenance = merged.isMaintenance === true || String(merged.isMaintenance).toLowerCase() === 'true';
+      }
+      if (merged.hasOwnProperty('isRapatAktif')) {
+        merged.isRapatAktif = merged.isRapatAktif === true || String(merged.isRapatAktif).toLowerCase() === 'true';
+      }
+
       return merged;
     }
     throw new Error(result.message);

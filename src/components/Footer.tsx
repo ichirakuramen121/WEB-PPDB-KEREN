@@ -1,9 +1,25 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 
 export default function Footer() {
   const { settings } = useSettings();
+  const navigate = useNavigate();
+  const [clickCount, setClickCount] = useState(0);
+
+  const handleSecretClick = () => {
+    setClickCount((prev) => {
+      const next = prev + 1;
+      if (next >= 3) {
+        navigate('/admin/login');
+        return 0;
+      }
+      // Reset clicks after 2 seconds
+      setTimeout(() => setClickCount(0), 2000);
+      return next;
+    });
+  };
 
   return (
     <footer className="bg-slate-900 text-slate-300 py-12 border-t border-slate-800">
@@ -19,7 +35,7 @@ export default function Footer() {
                 </div>
               )}
               <span className="font-bold text-xl tracking-tight text-white">
-                {settings?.namaSekolah || 'SDN Harapan Bangsa'}
+                {settings?.namaSekolah || 'SDN Citapen'}
               </span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-md">
@@ -58,14 +74,13 @@ export default function Footer() {
         
         <div className="mt-12 pt-8 border-t border-slate-800 text-center text-sm text-slate-500 flex flex-col md:flex-row justify-between items-center select-none">
           <p>
-            <Link 
-              to="/admin/login" 
-              className="hover:text-slate-300 font-extrabold pr-0.5 transition-colors select-none cursor-default inline-block"
-              title="Portal Admin"
+            <span 
+              onClick={handleSecretClick}
+              className="pr-0.5 select-none text-slate-500 cursor-default"
             >
               ©
-            </Link>{" "}
-            {new Date().getFullYear()} {settings?.namaSekolah || 'SDN Harapan Bangsa'}. Hak Cipta Dilindungi.
+            </span>{" "}
+            {new Date().getFullYear()} {settings?.namaSekolah || 'SDN Citapen'}. Hak Cipta Dilindungi.
           </p>
           <p className="mt-2 md:mt-0">Sistem SPMB Online Terintegrasi</p>
         </div>

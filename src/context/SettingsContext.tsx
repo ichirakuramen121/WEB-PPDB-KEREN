@@ -37,8 +37,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     fetchSettings();
     
     // Poll settings every 5 seconds so all open devices sync changes (like Maintenance mode) in near real-time
+    // Disable background settings polling when the active route is in the admin panel to prevent overwriting active edits.
     const interval = setInterval(() => {
-      fetchSettings();
+      if (!window.location.pathname.startsWith('/admin')) {
+        fetchSettings();
+      }
     }, 5000);
     
     return () => clearInterval(interval);

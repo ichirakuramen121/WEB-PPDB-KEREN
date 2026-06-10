@@ -2,17 +2,25 @@ import React, { useState } from 'react';
 import { Mail, Globe, MapPin, Phone, MessageSquare, AlertCircle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
-const underConstructionImg = new URL('../assets/images/maintenance_illustration_1781025042672.png', import.meta.url).href;
+const underConstructionImg = new URL('../assets/images/maintenance_illustration_1781058503264.png', import.meta.url).href;
 
 export default function MaintenancePage() {
   const { settings } = useSettings();
   const navigate = useNavigate();
   const [clickCount, setClickCount] = useState(0);
 
-  // Secret admin login handler
+  // Secret admin login handler: requires 3 quick clicks to activate and show login
   const handleSecretClick = () => {
-    // Hidden mechanism: clicking the Copyright symbol redirect directly
-    navigate('/admin/login');
+    setClickCount(prev => {
+      const next = prev + 1;
+      if (next >= 3) {
+        navigate('/admin/login');
+        return 0;
+      }
+      // Reset clicks after 2 seconds
+      setTimeout(() => setClickCount(0), 2000);
+      return next;
+    });
   };
 
   return (
@@ -114,8 +122,7 @@ export default function MaintenancePage() {
             {/* The copyright sign '©' acts as the hidden button to enter administrative panel */}
             <span 
               onClick={handleSecretClick} 
-              className="hover:text-slate-600 cursor-default font-extrabold pr-1 transition-colors select-none"
-              title="Sistem Admin"
+              className="select-none text-slate-400"
               style={{ paddingRight: '2px' }}
             >
               ©
