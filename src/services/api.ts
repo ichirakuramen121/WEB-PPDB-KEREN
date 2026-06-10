@@ -1,7 +1,7 @@
 // Service to interact with Google Apps Script Backend
 
 // To use the real backend, replace this URL with your deployed Google Apps Script Web App URL
-const GAS_WEB_APP_URL = ""; 
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxfbfCnQQ84kTnOoVPK19oC8qL8nu548ax1CiVuXo5XShZby1EJ10Q3M7AkCOAEZATK/exec"; 
 
 export interface FormField {
   id: string;
@@ -92,7 +92,7 @@ const getInitialMockSettings = (): AppSettings => {
     persyaratanDaftarUlang: "1. Membawa Bukti Kelulusan / Kelulusan SPMB (dicetak)\n2. Membawa Dokumen Daftar Ulang Resmi yang diunduh dari website (telah diisi dan ditandatangani)\n3. Fotokopi Kartu Keluarga (2 lembar)\n4. Fotokopi Akta Kelahiran (2 lembar)\n5. Pas Foto Calon Siswa berwarna ukuran 3x4 (4 lembar)\n6. Fotokopi KTP Orang Tua/Wali (masing-masing 2 lembar)\n7. Materai Rp 10.000 (1 lembar) untuk Surat Pernyataan",
     tanggalDaftarUlang: "2026-07-06",
     tanggalPengumuman: "2026-07-03",
-    logoSekolah: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop",
+    logoSekolah: "https://upload.wikimedia.org/wikipedia/commons/d/d1/Logo_Tut_Wuri_Handayani_Kemendikbud_RI.png",
     tahunPendaftaran: "2026",
     koordinatSekolah: "-7.3259441, 108.2205556", // Real coordinates of SDN Citapen Tasikmalaya
     tanggalCutoffUsia: "", // Tanggal ditetapkan cutoff usia
@@ -316,12 +316,13 @@ function safeParseJSON(val: any, fallback: any) {
 }
 
 export const getSettings = async (): Promise<AppSettings> => {
+  const defaults = getInitialMockSettings();
   if (!GAS_WEB_APP_URL) {
     try {
       const response = await fetch("/api/settings");
       const result = await response.json();
       if (result.status === "success") {
-        return result.data;
+        return { ...defaults, ...result.data };
       }
     } catch (e) {
       console.error("Failed to fetch settings from Express API", e);
@@ -333,12 +334,21 @@ export const getSettings = async (): Promise<AppSettings> => {
     const result = await response.json();
     if (result.status === "success") {
       const data = result.data;
-      return {
+      const merged = {
+        ...defaults,
         ...data,
-        formFields: safeParseJSON(data.formFields, data.formFields),
-        panduanAlur: safeParseJSON(data.panduanAlur, data.panduanAlur),
-        panduanDokumen: safeParseJSON(data.panduanDokumen, data.panduanDokumen),
+        formFields: safeParseJSON(data.formFields, data.formFields) || defaults.formFields,
+        panduanAlur: safeParseJSON(data.panduanAlur, data.panduanAlur) || defaults.panduanAlur,
+        panduanDokumen: safeParseJSON(data.panduanDokumen, data.panduanDokumen) || defaults.panduanDokumen,
       };
+
+      // For any keys that are empty, null, or undefined, fall back to our high-quality defaults
+      for (const key of Object.keys(merged) as Array<keyof AppSettings>) {
+        if (data[key] === null || data[key] === undefined || data[key] === "") {
+          (merged as any)[key] = (defaults as any)[key];
+        }
+      }
+      return merged;
     }
     throw new Error(result.message);
   } catch (error) {

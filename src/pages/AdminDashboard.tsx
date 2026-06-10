@@ -10,7 +10,7 @@ import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 
-const compressImage = (file: File, maxWidth = 800): Promise<string> => {
+const compressImage = (file: File, maxWidth = 800, quality = 0.55): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -32,9 +32,9 @@ const compressImage = (file: File, maxWidth = 800): Promise<string> => {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
         
-        // Use webp to preserve transparency and keep size small (good for PNGs). 
-        // Fallback to webp for everything reduces size.
-        resolve(canvas.toDataURL('image/webp', 0.8));
+        // Use webp for PNG/WebP files to keep transparency, and jpeg for the rest
+        const type = file.type === 'image/png' || file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
+        resolve(canvas.toDataURL(type, quality));
       };
     };
   });
@@ -864,27 +864,41 @@ export default function AdminDashboard() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const compressed = await compressImage(file, 400);
+                            const compressed = await compressImage(file, 180, 0.5);
                             setLocalSettings({...localSettings, logoSekolah: compressed});
                           }
                         }}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
+                      <input
+                        type="text"
+                        value={localSettings.logoSekolah || ''}
+                        onChange={e => setLocalSettings({...localSettings, logoSekolah: e.target.value})}
+                        placeholder="Atau tempel URL gambar logo eksternal di sini (misal: https://...)"
+                        className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
                       {localSettings.logoSekolah && <img src={localSettings.logoSekolah} alt="Logo Sekolah" className="mt-2 h-16 object-contain border rounded bg-white p-1" />}
                     </div>
                     <div className="md:col-span-2">
-                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Gambar Header Beranda (Upload)</label>
+                       <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Gambar Header Beranda (Upload)</label>
                       <input
                         type="file"
                         accept="image/*"
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const compressed = await compressImage(file, 1200);
+                            const compressed = await compressImage(file, 600, 0.45);
                             setLocalSettings({...localSettings, gambarHeaderBeranda: compressed});
                           }
                         }}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                      <input
+                        type="text"
+                        value={localSettings.gambarHeaderBeranda || ''}
+                        onChange={e => setLocalSettings({...localSettings, gambarHeaderBeranda: e.target.value})}
+                        placeholder="Atau tempel URL gambar header eksternal di sini (misal: https://...)"
+                        className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
                       {localSettings.gambarHeaderBeranda && <img src={localSettings.gambarHeaderBeranda} alt="Header Beranda" className="mt-2 h-32 object-cover border rounded bg-white" />}
                     </div>
@@ -1089,11 +1103,18 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 800);
+                              const compressed = await compressImage(file, 240, 0.55);
                               setLocalSettings({...localSettings, fotoKepalaSekolah: compressed});
                             }
                           }}
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                        <input
+                          type="text"
+                          value={localSettings.fotoKepalaSekolah || ''}
+                          onChange={e => setLocalSettings({...localSettings, fotoKepalaSekolah: e.target.value})}
+                          placeholder="Atau tempel URL gambar foto kepala sekolah eksternal di sini..."
+                          className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                         />
                         {localSettings.fotoKepalaSekolah && <img src={localSettings.fotoKepalaSekolah} alt="Foto Kepala Sekolah" className="mt-2 h-32 object-cover border rounded bg-white" />}
                       </div>
@@ -1350,7 +1371,7 @@ export default function AdminDashboard() {
                         />
                       </div>
 
-                      <div>
+                       <div>
                         <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Kop Surat (Gambar)</label>
                         <input
                           type="file"
@@ -1358,11 +1379,18 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 1200);
+                              const compressed = await compressImage(file, 500, 0.5);
                               setLocalSettings({...localSettings, kopSurat: compressed});
                             }
                           }}
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                        <input
+                          type="text"
+                          value={localSettings.kopSurat || ''}
+                          onChange={e => setLocalSettings({...localSettings, kopSurat: e.target.value})}
+                          placeholder="Atau tempel URL gambar kop surat eksternal di sini..."
+                          className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                         />
                         {localSettings.kopSurat && <img src={localSettings.kopSurat} alt="Kop Surat" className="mt-2 h-16 object-contain border rounded bg-white" />}
                       </div>
@@ -1375,11 +1403,18 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 400);
+                              const compressed = await compressImage(file, 180, 0.5);
                               setLocalSettings({...localSettings, tandaTanganKepalaSekolah: compressed});
                             }
                           }}
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                        <input
+                          type="text"
+                          value={localSettings.tandaTanganKepalaSekolah || ''}
+                          onChange={e => setLocalSettings({...localSettings, tandaTanganKepalaSekolah: e.target.value})}
+                          placeholder="Atau tempel URL gambar tanda tangan eksternal di sini..."
+                          className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                         />
                         {localSettings.tandaTanganKepalaSekolah && <img src={localSettings.tandaTanganKepalaSekolah} alt="Tanda Tangan" className="mt-2 h-16 object-contain border rounded bg-white" />}
                       </div>
@@ -1392,11 +1427,18 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 400);
+                              const compressed = await compressImage(file, 180, 0.5);
                               setLocalSettings({...localSettings, stempelSekolah: compressed});
                             }
                           }}
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                        />
+                        <input
+                          type="text"
+                          value={localSettings.stempelSekolah || ''}
+                          onChange={e => setLocalSettings({...localSettings, stempelSekolah: e.target.value})}
+                          placeholder="Atau tempel URL gambar stempel eksternal di sini..."
+                          className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                         />
                         {localSettings.stempelSekolah && <img src={localSettings.stempelSekolah} alt="Stempel" className="mt-2 h-16 object-contain border rounded bg-white" />}
                       </div>

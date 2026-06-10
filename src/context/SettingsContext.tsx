@@ -35,6 +35,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchSettings();
+    
+    // Poll settings every 5 seconds so all open devices sync changes (like Maintenance mode) in near real-time
+    const interval = setInterval(() => {
+      fetchSettings();
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   return (

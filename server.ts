@@ -84,7 +84,7 @@ async function startServer() {
     tanggalPembukaanPendaftaran: "2026-06-29T09:00"
   };
 
-  const loadSettings = () => {
+  const loadSettings = async () => {
     if (fs.existsSync(SETTINGS_PATH)) {
       try {
         return JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8"));
@@ -97,7 +97,7 @@ async function startServer() {
     return defaultSettings;
   };
 
-  const saveSettings = (newSettings: any) => {
+  const saveSettings = async (newSettings: any) => {
     try {
       fs.writeFileSync(SETTINGS_PATH, JSON.stringify(newSettings, null, 2));
     } catch (e) {
@@ -105,7 +105,7 @@ async function startServer() {
     }
   };
 
-  const loadRegistrations = () => {
+  const loadRegistrations = async () => {
     if (fs.existsSync(REGISTRATIONS_PATH)) {
       try {
         return JSON.parse(fs.readFileSync(REGISTRATIONS_PATH, "utf-8"));
@@ -133,39 +133,38 @@ async function startServer() {
     return initialRegistrations;
   };
 
-  const saveRegistrations = (regs: any[]) => {
+  const saveRegistrations = async (regs: any[]) => {
     try {
       fs.writeFileSync(REGISTRATIONS_PATH, JSON.stringify(regs, null, 2));
     } catch (e) {
-      console.error("Error saving registrations.json", e);
+      console.error("Error saving backup registrations.json", e);
     }
   };
 
   // API - Get Settings
-  app.get("/api/settings", (req, res) => {
-    const settings = loadSettings();
+  app.get("/api/settings", async (req, res) => {
+    const settings = await loadSettings();
     res.json({ status: "success", data: settings });
   });
 
   // API - Update Settings
-  app.post("/api/settings", (req, res) => {
-    const current = loadSettings();
+  app.post("/api/settings", async (req, res) => {
+    const current = await loadSettings();
     const updated = { ...current, ...req.body };
-    saveSettings(updated);
+    await saveSettings(updated);
     res.json({ status: "success", data: updated });
   });
 
   // API - Get Registrations
-  app.get("/api/registrations", (req, res) => {
-    const registrations = loadRegistrations();
+  app.get("/api/registrations", async (req, res) => {
+    const registrations = await loadRegistrations();
     res.json({ status: "success", data: registrations });
   });
 
   // API - New Registration
-  app.post("/api/registrations", (req, res) => {
-    const settings = loadSettings();
-    const registrations = loadRegistrations();
-    const formFields = settings.formFields || [];
+  app.post("/api/registrations", async (req, res) => {
+    const settings = await loadSettings();
+    const registrations = await loadRegistrations();
 
     const data = req.body;
     let year = settings.tahunPendaftaran || new Date().getFullYear().toString();
@@ -182,15 +181,15 @@ async function startServer() {
     };
 
     registrations.push(newEntry);
-    saveRegistrations(registrations);
+    await saveRegistrations(registrations);
 
     res.json({ status: "success", noPendaftaran });
   });
 
   // API - Update Status
-  app.post("/api/registrations/status", (req, res) => {
+  app.post("/api/registrations/status", async (req, res) => {
     const { noPendaftaran, newStatus, alasan } = req.body;
-    const registrations = loadRegistrations();
+    const registrations = await loadRegistrations();
     const index = registrations.findIndex((r: any) => r["No Pendaftaran"] === noPendaftaran);
 
     if (index !== -1) {
@@ -198,7 +197,8 @@ async function startServer() {
       if (alasan !== undefined) {
         registrations[index]["Alasan Penolakan"] = alasan;
       }
-      saveRegistrations(registrations);
+      
+      await saveRegistrations(registrations);
       return res.json({ status: "success" });
     }
 
@@ -206,9 +206,9 @@ async function startServer() {
   });
 
   // API - Check Status
-  app.post("/api/registrations/check", (req, res) => {
+  app.post("/api/registrations/check", async (req, res) => {
     const { noPendaftaran } = req.body;
-    const registrations = loadRegistrations();
+    const registrations = await loadRegistrations();
     const student = registrations.find((r: any) => r["No Pendaftaran"] === noPendaftaran);
 
     if (student) {
@@ -234,6 +234,19 @@ async function startServer() {
       res.json({ status: "success" });
     } else {
       res.json({ status: "error", message: "Username atau password salah" });
+    }
+  });
+
+  // API - Download ZIP safely (to prevent browser preview text corruption)
+  app.get("/download-zip", (req, res) => {
+    const zipPath = path.join(process.cwd(), "website-siap-upload.zip");
+    if (fs.existsSync(zipPath)) {
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", "attachment; filename=website-siap-upload.zip");
+      const filestream = fs.createReadStream(zipPath);
+      filestream.pipe(res);
+    } else {
+      res.status(404).send("File website-siap-upload.zip tidak ditemukan di server. Silakan hubungi AI.");
     }
   });
 
