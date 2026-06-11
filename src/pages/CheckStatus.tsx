@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Search, CheckCircle, XCircle, Clock, Loader2, ArrowLeft, Printer, Download, ArrowRight, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { checkStatus } from '../services/api';
-import { cn } from '../lib/utils';
+import { cn, formatRapatTanggal } from '../lib/utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import Swal from 'sweetalert2';
@@ -567,7 +567,7 @@ export default function CheckStatus() {
                   <div className="text-xs text-slate-705 space-y-1 mt-1.5 leading-relaxed">
                     <p>{settings.rapatDeskripsi}</p>
                     <div className="pt-2 select-none font-semibold text-slate-800 grid grid-cols-1 gap-1 border-t border-amber-200/50 mt-2">
-                       <div>📅 <b>Hari / Tanggal:</b> {settings.rapatTanggal || "Sabtu, 11 Juli 2026"}</div>
+                       <div>📅 <b>Hari / Tanggal:</b> {formatRapatTanggal(settings.rapatTanggal) || "Sabtu, 11 Juli 2026"}</div>
                        <div>⏰ <b>Waktu:</b> {settings.rapatWaktu || "08:00 WIB s.d Selesai"}</div>
                        <div>📍 <b>Tempat:</b> {settings.rapatTempat || "Aula SDN Citapen"}</div>
                     </div>

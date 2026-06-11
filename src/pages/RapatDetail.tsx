@@ -2,12 +2,13 @@ import { motion } from 'motion/react';
 import { Calendar, Clock, MapPin, ArrowLeft, Printer, AlertCircle, FileText, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
+import { formatRapatTanggal } from '../lib/utils';
 
 export default function RapatDetail() {
   const { settings } = useSettings();
 
   const judul = settings?.rapatJudul || 'Pemberitahuan Rapat Orang Tua / Wali Calon Siswa Baru';
-  const tanggal = settings?.rapatTanggal || 'Sabtu, 11 Juli 2026';
+  const tanggal = settings?.rapatTanggal ? formatRapatTanggal(settings.rapatTanggal) : 'Sabtu, 11 Juli 2026';
   const waktu = settings?.rapatWaktu || '08:00 WIB s.d Selesai';
   const tempat = settings?.rapatTempat || 'Aula Serbaguna SDN Citapen Tasikmalaya';
   const deskripsi = settings?.rapatDeskripsi || 'Diharapkan kehadiran Bapak/Ibu Orang Tua/Wali Calon Siswa Baru yang telah dinyatakan diterima untuk menghadiri rapat pembekalan awal tahun pelajaran baru.';
