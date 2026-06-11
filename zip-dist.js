@@ -24,6 +24,24 @@ try {
     console.log('Added index.html to ZIP');
   }
 
+  // Also include any logo, favicon, or main images residing at the root of /dist in the ZIP
+  try {
+    const rootFiles = fs.readdirSync(distDir);
+    rootFiles.forEach(file => {
+      const ext = path.extname(file).toLowerCase();
+      // Add root assets such as .png, .svg, .ico, .webp (excluding index.html, directory folders, etc)
+      if (['.png', '.svg', '.ico', '.webp'].includes(ext)) {
+        const filePath = path.join(distDir, file);
+        if (fs.statSync(filePath).isFile()) {
+          zip.addLocalFile(filePath);
+          console.log(`Added root asset ${file} to ZIP`);
+        }
+      }
+    });
+  } catch (e) {
+    console.error('Error adding root assets to ZIP:', e);
+  }
+
   // Create and add .htaccess for React SPA Routing on Apache / cPanel
   const htaccessContent = `<IfModule mod_rewrite.c>
   RewriteEngine On
