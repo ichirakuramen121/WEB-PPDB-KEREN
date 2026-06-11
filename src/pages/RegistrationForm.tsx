@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Upload, 
   AlertCircle, 
@@ -755,14 +755,17 @@ export default function RegistrationForm() {
             >
               <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
                 
-                {/* Step 1: Data Calon Siswa */}
-                {currentStep === 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-6"
-                  >
+                <AnimatePresence mode="wait">
+                  {/* Step 1: Data Calon Siswa */}
+                  {currentStep === 1 && (
+                    <motion.div
+                      key="step1"
+                      initial={{ opacity: 0, x: 15 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -15 }}
+                      transition={{ duration: 0.22, ease: "easeInOut" }}
+                      className="space-y-6"
+                    >
                     <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-4">
                       <div className="bg-blue-100 text-blue-600 p-2.5 rounded-2xl">
                         <User size={22} className="stroke-2" />
@@ -829,9 +832,11 @@ export default function RegistrationForm() {
                 {/* Step 2: Data Orang Tua Kandung */}
                 {currentStep === 2 && (
                   <motion.div
-                    initial={{ opacity: 0, x: 20 }}
+                    key="step2"
+                    initial={{ opacity: 0, x: 15 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.22, ease: "easeInOut" }}
                     className="space-y-6"
                   >
                     <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-4">
@@ -870,9 +875,11 @@ export default function RegistrationForm() {
                 {/* Step 3: Wali Siswa (Opsional) */}
                 {currentStep === 3 && (
                   <motion.div
-                    initial={{ opacity: 0, x: 20 }}
+                    key="step3"
+                    initial={{ opacity: 0, x: 15 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.22, ease: "easeInOut" }}
                     className="space-y-6"
                   >
                     <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-4">
@@ -915,9 +922,11 @@ export default function RegistrationForm() {
                 {/* Step 4: Unggah Dokumen Syarat */}
                 {currentStep === 4 && (
                   <motion.div
-                    initial={{ opacity: 0, x: 20 }}
+                    key="step4"
+                    initial={{ opacity: 0, x: 15 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.22, ease: "easeInOut" }}
                     className="space-y-6"
                   >
                     <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-4">
@@ -963,9 +972,11 @@ export default function RegistrationForm() {
                 {/* Step 5: REVIEW / PRATINJAU DATA PENDAFTAR (Awesome Premium UX Addition) */}
                 {currentStep === 5 && (
                   <motion.div
-                    initial={{ opacity: 0, x: 20 }}
+                    key="step5"
+                    initial={{ opacity: 0, x: 15 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.22, ease: "easeInOut" }}
                     className="space-y-6"
                   >
                     <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-4">
@@ -990,7 +1001,7 @@ export default function RegistrationForm() {
                       <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200">
                         <h4 className="text-xs font-extrabold text-blue-700 uppercase tracking-widest mb-3 flex items-center gap-1.5 border-b pb-2">
                           <User size={14} />
-                          Informasi Dasar Penilaian Siswa
+                          Informasi Calon Murid
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3.5 gap-x-6 text-sm">
                           {getFieldsForSummary().filter(f => getFieldSession(f) === 1).map(field => (
@@ -1075,6 +1086,7 @@ export default function RegistrationForm() {
                     </div>
                   </motion.div>
                 )}
+                </AnimatePresence>
 
                 {/* Navigation and step triggers */}
                 <div className="pt-6 border-t border-slate-100 flex justify-between items-center gap-4">

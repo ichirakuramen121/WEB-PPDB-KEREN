@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Filter, Download, Printer, CheckCircle, XCircle, Clock, FileText, Moon, Sun, Loader2, LogOut, Eye, X, Settings, LayoutDashboard, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Filter, Download, Printer, CheckCircle, XCircle, Clock, FileText, Moon, Sun, Loader2, LogOut, Eye, X, Settings, LayoutDashboard, RefreshCw, ArrowUp, ArrowDown, Trash } from 'lucide-react';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -1032,15 +1032,126 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Link Google Drive Berkas Daftar Ulang (Opsional)</label>
-                        <input
-                          type="url"
-                          value={localSettings.googleDriveDaftarUlang || ''}
-                          onChange={e => setLocalSettings({...localSettings, googleDriveDaftarUlang: e.target.value})}
-                          className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
-                          placeholder="Masukkan tautan Google Drive berisi berkas/formulir pendaftaran ulang resmi..."
-                        />
-                        <p className="text-xs text-slate-500 mt-1">Siswa yang Lulus akan melihat tombol untuk mengunduh dokumen langsung dari Google Drive Anda untuk dicetak.</p>
+                        {(() => {
+                          const parseDriveLinks = (val?: string) => {
+                            if (!val) return [];
+                            const trimmed = val.trim();
+                            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                              try {
+                                const parsed = JSON.parse(trimmed);
+                                if (Array.isArray(parsed)) {
+                                  return parsed.map((item: any, index) => {
+                                    if (typeof item === 'object' && item !== null && item.url) {
+                                      return {
+                                        label: item.label || `Link Dokumen ${index + 1}`,
+                                        url: item.url.trim()
+                                      };
+                                    } else if (typeof item === 'string') {
+                                      return {
+                                        label: `Link Dokumen ${index + 1}`,
+                                        url: item.trim()
+                                      };
+                                    }
+                                    return null;
+                                  }).filter(Boolean) as { label: string; url: string }[];
+                                }
+                              } catch (e) {}
+                            }
+                            
+                            const urls = trimmed.split(/[\n,;]+/).map(u => u.trim()).filter(u => u.startsWith('http'));
+                            if (urls.length > 0) {
+                              return urls.map((url, idx) => ({
+                                label: urls.length === 1 ? 'Formulir Daftar Ulang' : `Link Dokumen ${idx + 1}`,
+                                url
+                              }));
+                            }
+                            return [];
+                          };
+
+                          const currentLinks = parseDriveLinks(localSettings.googleDriveDaftarUlang);
+
+                          const updateAndSaveLinks = (updatedLinks: { label: string; url: string }[]) => {
+                            if (!localSettings) return;
+                            setLocalSettings({
+                              ...localSettings,
+                              googleDriveDaftarUlang: JSON.stringify(updatedLinks)
+                            });
+                          };
+
+                          return (
+                            <div className="space-y-3">
+                              <label className={cn("block text-sm font-bold mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>
+                                Dokumen / Link Google Drive Berkas Daftar Ulang (Bisa memasukkan beberapa link)
+                              </label>
+                              
+                              <div className="space-y-3">
+                                {currentLinks.map((link, idx) => (
+                                  <div key={idx} className={cn("p-4 rounded-xl border flex flex-col md:flex-row gap-3 items-end md:items-center", isDarkMode ? "bg-slate-900 border-slate-700" : "bg-slate-50 border-slate-200")}>
+                                    <div className="w-full md:w-1/3">
+                                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Nama / Label Berkas</label>
+                                      <input
+                                        type="text"
+                                        value={link.label}
+                                        placeholder="Contoh: Formulir Pendaftaran Ulang"
+                                        onChange={e => {
+                                          const newLinks = [...currentLinks];
+                                          newLinks[idx].label = e.target.value;
+                                          updateAndSaveLinks(newLinks);
+                                        }}
+                                        className={cn("w-full px-3 py-1.5 text-xs border rounded-lg focus:ring-1 focus:ring-blue-500", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
+                                      />
+                                    </div>
+                                    <div className="w-full md:flex-grow">
+                                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Tautan / URL Google Drive</label>
+                                      <input
+                                        type="url"
+                                        value={link.url}
+                                        placeholder="https://drive.google.com/..."
+                                        onChange={e => {
+                                          const newLinks = [...currentLinks];
+                                          newLinks[idx].url = e.target.value;
+                                          updateAndSaveLinks(newLinks);
+                                        }}
+                                        className={cn("w-full px-3 py-1.5 text-xs border rounded-lg focus:ring-1 focus:ring-blue-500", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
+                                      />
+                                    </div>
+                                    <div className="shrink-0 pt-2 md:pt-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newLinks = currentLinks.filter((_, i) => i !== idx);
+                                          updateAndSaveLinks(newLinks);
+                                        }}
+                                        className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-all"
+                                        title="Hapus Link ini"
+                                      >
+                                        <Trash size={16} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                                
+                                {currentLinks.length === 0 && (
+                                  <div className="p-4 rounded-xl border border-dashed text-center text-xs text-slate-500 py-6 dark:border-slate-800">
+                                    Belum ada link berkas Google Drive ditambahkan. Klik tombol di bawah untuk menambahkan link berkas.
+                                  </div>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newLinks = [...currentLinks, { label: `Link Dokumen ${currentLinks.length + 1}`, url: '' }];
+                                    updateAndSaveLinks(newLinks);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-2 rounded-lg font-bold transition-colors dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+                                >
+                                  + Tambah Link Berkas Baru
+                                </button>
+                              </div>
+                              <p className="text-xs text-slate-400">Siswa yang Lulus akan melihat tombol-tombol terpisah sesuai nama berkas untuk mengunduh dokumen secara langsung.</p>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       <div className="md:col-span-2 border-t border-dashed border-slate-200 dark:border-slate-800 pt-6 mt-4">

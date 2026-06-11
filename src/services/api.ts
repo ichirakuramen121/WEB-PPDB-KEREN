@@ -151,23 +151,6 @@ const getInitialMockSettings = (): AppSettings => {
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      // Force change to SDN Citapen and new schedule dates if it's the old defaults or contains PPDB strings
-      if (
-        parsed.namaSekolah === "SDN Harapan Bangsa" || 
-        !parsed.namaSekolah || 
-        parsed.panduanJudul?.includes("PPDB") || 
-        !parsed.tanggalDaftarUlang || 
-        parsed.tanggalDaftarUlang === "2024-07-15" ||
-        !parsed.panduanDokumen ||
-        parsed.panduanDokumen.length < 5 ||
-        !parsed.panduanDokumen[2]?.description.includes("harus di-scan secara jelas dan utuh")
-      ) {
-        localStorage.removeItem('app_settings_cache');
-        try {
-          localStorage.setItem('mockSettings', JSON.stringify(defaultSettings));
-        } catch (inner) {}
-        return defaultSettings;
-      }
       return { ...defaultSettings, ...parsed }; // Merge default settings with parsed local settings
     } catch (e) {
       console.error("Failed to parse mock settings from localStorage", e);

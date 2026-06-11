@@ -382,24 +382,79 @@ export default function CheckStatus() {
                 {settings?.persyaratanDaftarUlang || '1. Membawa Bukti Kelulusan yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal'}
               </div>
 
-              {settings?.googleDriveDaftarUlang && (
-                <div className="mt-4 p-4 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-900">
-                  <h5 className="font-bold flex items-center gap-2 text-indigo-850 text-sm">
-                    <Download size={16} /> Berkas Formulir Google Drive
-                  </h5>
-                  <p className="text-xs text-indigo-700 mt-1">
-                    Silakan unduh dokumen/formulir tambahan resmi di bawah melalui Google Drive, cetak mandiri di rumah, dan bawa saat melakukan pendaftaran ulang fisik ke sekolah:
-                  </p>
-                  <a
-                    href={settings.googleDriveDaftarUlang}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3.5 inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shadow-sm"
-                  >
-                    Buka Google Drive Berkas Resmi <ArrowRight size={14} />
-                  </a>
-                </div>
-              )}
+              {settings?.googleDriveDaftarUlang && (() => {
+                const parseGoogleDriveLinks = (val?: string) => {
+                  if (!val) return [];
+                  const trimmed = val.trim();
+                  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                    try {
+                      const parsed = JSON.parse(trimmed);
+                      if (Array.isArray(parsed)) {
+                        return parsed.map((item: any, index) => {
+                          if (typeof item === 'object' && item !== null && item.url) {
+                            return {
+                              label: item.label || `Link Dokumen ${index + 1}`,
+                              url: item.url.trim()
+                            };
+                          } else if (typeof item === 'string') {
+                            return {
+                              label: `Link Dokumen ${index + 1}`,
+                              url: item.trim()
+                            };
+                          }
+                          return null;
+                        }).filter(Boolean) as { label: string; url: string }[];
+                      }
+                    } catch (e) {
+                      console.warn("JSON parse failed", e);
+                    }
+                  }
+                  
+                  // Backwards compatibility with comma or newline separated plain URLs
+                  const urls = trimmed.split(/[\n,;]+/).map(u => u.trim()).filter(u => u.startsWith('http'));
+                  if (urls.length > 0) {
+                    return urls.map((url, idx) => ({
+                      label: urls.length === 1 ? 'Buka Google Drive Berkas Resmi' : `Unduh Dokumen ${idx + 1}`,
+                      url
+                    }));
+                  }
+                  
+                  if (trimmed) {
+                    return [{
+                      label: 'Buka Google Drive Berkas Resmi',
+                      url: trimmed
+                    }];
+                  }
+                  return [];
+                };
+
+                const links = parseGoogleDriveLinks(settings.googleDriveDaftarUlang);
+                if (links.length === 0) return null;
+
+                return (
+                  <div className="mt-4 p-4 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-900">
+                    <h5 className="font-bold flex items-center gap-2 text-indigo-850 text-sm">
+                      <Download size={16} /> Berkas Formulir Google Drive ({links.length})
+                    </h5>
+                    <p className="text-xs text-indigo-700 mt-1 mb-2">
+                      Silakan unduh dokumen/formulir tambahan resmi di bawah melalui Google Drive, cetak mandiri di rumah, dan bawa saat melakukan pendaftaran ulang fisik ke sekolah:
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {links.map((link, idx) => (
+                        <a
+                          key={idx}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shadow-sm"
+                        >
+                          <Download size={12} /> {link.label} <ArrowRight size={12} />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {settings?.isRapatAktif && (
                 <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50/50 text-slate-800">
