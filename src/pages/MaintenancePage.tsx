@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Mail, Globe, MapPin, Phone, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
-import { motion } from 'motion/react';
-import underConstructionImg from '../assets/images/maintenance_illustration_1781146802440.png';
+
+const underConstructionImg = new URL('../assets/images/maintenance_illustration_1781146802440.png', import.meta.url).href;
 
 export default function MaintenancePage() {
   const { settings } = useSettings();
@@ -28,7 +28,7 @@ export default function MaintenancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#D3ECFD] text-[#2C3E50] flex flex-col justify-between font-sans antialiased relative">
+    <div className="min-h-screen bg-[#E5F1FC] text-[#2C3E50] flex flex-col justify-between font-sans antialiased relative">
       
       {/* Spacer or very thin elegant top strip */}
       <div></div>
@@ -36,30 +36,15 @@ export default function MaintenancePage() {
       {/* Main Content Area matches the uploaded mockup perfectly */}
       <div className="max-w-4xl mx-auto px-6 py-8 flex-grow flex flex-col justify-center items-center text-center">
         
-        {/* Central Illustration - Developer on Browser mockup with smooth floating animation */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ 
-            opacity: 1, 
-            y: [0, -10, 0]
-          }}
-          transition={{
-            opacity: { duration: 0.8 },
-            y: {
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }
-          }}
-          className="w-full max-w-lg mx-auto mb-8 flex justify-center items-center"
-        >
+        {/* Central Illustration - Developer on Browser mockup */}
+        <div className="w-full max-w-lg mx-auto mb-8 flex justify-center items-center">
           <img 
             src={underConstructionImg} 
             alt="Sistem Maintenance" 
-            className="w-full h-auto object-contain max-h-[340px] select-none filter drop-shadow-sm transition-transform duration-700 hover:scale-[1.02]"
+            className="w-full h-auto object-contain max-h-[340px] select-none transition-transform duration-700 hover:scale-[1.01]"
             referrerPolicy="no-referrer"
           />
-        </motion.div>
+        </div>
 
         {/* SITE UNDER MAINTENANCE Custom Title */}
         <h1 className="text-2xl md:text-3.5xl font-extrabold tracking-[0.16em] text-[#255C8F] uppercase mb-4 leading-tight">
@@ -77,7 +62,7 @@ export default function MaintenancePage() {
             onClick={() => window.location.reload()}
             className="inline-flex items-center gap-2 bg-[#255C8F] hover:bg-[#1C4770] text-white font-bold px-6 py-2.5 rounded-full text-xs tracking-wider transition-all shadow-md active:scale-95 uppercase"
           >
-            <RefreshCw size={13} className="animate-spin" style={{ animationDuration: '4s' }} /> Muat Ulang
+            <RefreshCw size={13} className="animate-spin" style={{ animationDuration: '4s' }} /> Periksa Status Sistem
           </button>
         </div>
 
