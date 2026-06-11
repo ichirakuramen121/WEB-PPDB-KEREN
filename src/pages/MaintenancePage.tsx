@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Globe, MapPin, Phone, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
-
-const underConstructionImg = new URL('../assets/images/maintenance_illustration_1781146802440.png', import.meta.url).href;
+import underConstructionImg from '../assets/images/maintenance_illustration_1781146802440.png';
 
 export default function MaintenancePage() {
   const { settings } = useSettings();
