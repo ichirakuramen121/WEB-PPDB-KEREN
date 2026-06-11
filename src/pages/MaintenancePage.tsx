@@ -12,16 +12,19 @@ export default function MaintenancePage() {
 
   // Secret admin login handler: requires 3 quick clicks to activate and show login
   const handleSecretClick = () => {
-    setClickCount(prev => {
-      const next = prev + 1;
-      if (next >= 3) {
-        navigate('/admin/login');
-        return 0;
-      }
+    const nextClickCount = clickCount + 1;
+    
+    if (nextClickCount >= 3) {
+      setClickCount(0);
+      navigate('/admin/login');
+    } else {
+      setClickCount(nextClickCount);
       // Reset clicks after 2 seconds
-      setTimeout(() => setClickCount(0), 2000);
-      return next;
-    });
+      const timer = setTimeout(() => {
+        setClickCount(0);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
   };
 
   return (
