@@ -294,6 +294,8 @@ export function getScheduledStatus(settings: AppSettings | null, currentDate: Da
 function safeParseJSON(val: any, fallback: any) {
   if (val === null || val === undefined) return fallback;
   if (typeof val !== 'string') return val;
+  const trimmed = val.trim();
+  if (trimmed === '' || trimmed === '[object Object]' || trimmed.includes('[object Object]')) return fallback;
   try {
     return JSON.parse(val);
   } catch (e) {
@@ -304,35 +306,43 @@ function safeParseJSON(val: any, fallback: any) {
 
 export const getSettings = async (): Promise<AppSettings> => {
   const defaults = getInitialMockSettings();
-  if (!GAS_WEB_APP_URL) {
-    try {
-      const response = await fetch("/api/settings");
-      const result = await response.json();
-      if (result.status === "success") {
-        return { ...defaults, ...result.data };
-      }
-    } catch (e) {
-      console.error("Failed to fetch settings from Express API", e);
+  
+  // Always query our local/backup Express API first as a very fast and complete data source
+  let localData: Partial<AppSettings> | null = null;
+  try {
+    const response = await fetch("/api/settings");
+    const result = await response.json();
+    if (result.status === "success" && result.data) {
+      localData = result.data;
     }
-    return { ...mockSettings };
+  } catch (e) {
+    console.error("Failed to fetch settings from Express API", e);
   }
+
+  const baseSettings = { ...defaults, ...(localData || mockSettings) };
+
+  if (!GAS_WEB_APP_URL) {
+    return baseSettings;
+  }
+
   try {
     const response = await fetch(`${GAS_WEB_APP_URL}?action=getSettings&t=${Date.now()}`);
     const result = await response.json();
     if (result.status === "success") {
       const data = result.data;
+      
       const merged = {
-        ...defaults,
+        ...baseSettings,
         ...data,
-        formFields: safeParseJSON(data.formFields, data.formFields) || defaults.formFields,
-        panduanAlur: safeParseJSON(data.panduanAlur, data.panduanAlur) || defaults.panduanAlur,
-        panduanDokumen: safeParseJSON(data.panduanDokumen, data.panduanDokumen) || defaults.panduanDokumen,
+        formFields: safeParseJSON(data.formFields, data.formFields) || baseSettings.formFields,
+        panduanAlur: safeParseJSON(data.panduanAlur, data.panduanAlur) || baseSettings.panduanAlur,
+        panduanDokumen: safeParseJSON(data.panduanDokumen, data.panduanDokumen) || baseSettings.panduanDokumen,
       };
 
-      // For any keys that are empty, null, or undefined, fall back to our high-quality defaults
+      // For any keys that are empty, null, or undefined, fall back to our fast/complete localData or defaults
       for (const key of Object.keys(merged) as Array<keyof AppSettings>) {
         if (data[key] === null || data[key] === undefined || data[key] === "") {
-          (merged as any)[key] = (defaults as any)[key];
+          (merged as any)[key] = (baseSettings as any)[key];
         }
       }
 
@@ -348,36 +358,46 @@ export const getSettings = async (): Promise<AppSettings> => {
     }
     throw new Error(result.message);
   } catch (error) {
-    console.error("Error fetching settings:", error);
-    throw error;
+    console.error("Error fetching settings from GAS:", error);
+    return baseSettings;
   }
 };
 
 export const updateSettings = async (settings: Partial<AppSettings>) => {
+  // Always synchronize changes to local Express API immediately
+  try {
+    await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings)
+    });
+  } catch (e) {
+    console.error("Failed to update settings in Express API background", e);
+  }
+  saveMockSettings({ ...mockSettings, ...settings });
+
   if (!GAS_WEB_APP_URL) {
-    try {
-      const response = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings)
-      });
-      const result = await response.json();
-      if (result.status === "success") {
-        saveMockSettings(result.data); // Keep local fallback in sync
-        return result;
-      }
-    } catch (e) {
-      console.error("Failed to update settings in Express API", e);
-    }
-    saveMockSettings({ ...mockSettings, ...settings });
     return { status: "success" };
   }
+
   try {
+    // Clone and serialize structured collections before sending to Google Sheets / GAS to ensure proper string columns
+    const payload = { ...settings };
+    if (payload.formFields && typeof payload.formFields !== 'string') {
+      payload.formFields = JSON.stringify(payload.formFields) as any;
+    }
+    if (payload.panduanAlur && typeof payload.panduanAlur !== 'string') {
+      payload.panduanAlur = JSON.stringify(payload.panduanAlur) as any;
+    }
+    if (payload.panduanDokumen && typeof payload.panduanDokumen !== 'string') {
+      payload.panduanDokumen = JSON.stringify(payload.panduanDokumen) as any;
+    }
+
     const response = await fetch(GAS_WEB_APP_URL, {
       method: "POST",
       body: JSON.stringify({
         action: "updateSettings",
-        settings
+        settings: payload
       }),
       headers: { "Content-Type": "text/plain;charset=utf-8" },
     });

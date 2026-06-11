@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { getRegistrations, updateStatus, AdminData, updateSettings } from '../services/api';
+import { getRegistrations, updateStatus, AdminData, updateSettings, getSettings } from '../services/api';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
@@ -295,7 +295,16 @@ export default function AdminDashboard() {
       };
 
       await updateSettings(settingsToSave);
-      setLocalSettings(null);
+      const updatedData = await getSettings();
+      const enrichedFields = (updatedData.formFields || []).map(field => ({
+        ...field,
+        _tempKey: field._tempKey || field.id || Math.random().toString(),
+        _rawOptions: field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')
+      }));
+      setLocalSettings({
+        ...updatedData,
+        formFields: enrichedFields
+      });
       await refreshSettings();
       Swal.fire({
         icon: 'success',

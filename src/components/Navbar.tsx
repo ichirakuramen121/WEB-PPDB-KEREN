@@ -1,12 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { GraduationCap, Menu, X, Shield } from 'lucide-react';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { GraduationCap } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useSettings } from '../context/SettingsContext';
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { settings } = useSettings();
 
@@ -18,18 +15,18 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full backdrop-blur-md bg-white/80 border-b border-slate-200 shadow-sm">
+    <nav className="sticky top-0 z-50 w-full backdrop-blur-md bg-white/95 border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 max-w-[70%] sm:max-w-full">
             {settings?.logoSekolah ? (
-              <img src={settings.logoSekolah} alt="Logo Sekolah" className="h-10 w-auto object-contain" referrerPolicy="no-referrer" />
+              <img src={settings.logoSekolah} alt="Logo Sekolah" className="h-9 sm:h-10 w-auto object-contain shrink-0" referrerPolicy="no-referrer" />
             ) : (
-              <div className="bg-blue-600 p-2 rounded-lg text-white">
-                <GraduationCap size={24} />
+              <div className="bg-blue-600 p-1.5 sm:p-2 rounded-lg text-white shrink-0">
+                <GraduationCap size={20} className="sm:w-6 sm:h-6" />
               </div>
             )}
-            <span className="font-bold text-xl tracking-tight text-slate-900">
+            <span className="font-bold text-sm sm:text-base md:text-lg lg:text-xl tracking-tight text-slate-900 truncate">
               {settings?.namaSekolah || 'SDN Citapen'}
             </span>
           </Link>
@@ -41,8 +38,8 @@ export default function Navbar() {
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  "text-sm font-medium transition-colors hover:text-blue-600",
-                  location.pathname === link.path ? "text-blue-600" : "text-slate-600"
+                  "text-sm font-medium transition-colors hover:text-blue-600 py-1",
+                  location.pathname === link.path ? "text-blue-600 border-b-2 border-blue-600 font-semibold" : "text-slate-600"
                 )}
               >
                 {link.name}
@@ -56,47 +53,42 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-slate-600 hover:text-slate-900 focus:outline-none"
+          {/* Mobile Quick Action Link */}
+          <div className="md:hidden">
+            <Link
+              to="/daftar"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm"
             >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+              Daftar
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-b border-slate-200"
-          >
-            <div className="px-4 pt-2 pb-4 space-y-1">
-              {links.map((link) => (
+      {/* Mobile Row of Links - Always visible, no hamburger required */}
+      <div className="md:hidden border-t border-slate-100 bg-slate-50/50 py-2.5">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-around items-center">
+            {links.map((link) => {
+              const isActive = location.pathname === link.path;
+              return (
                 <Link
                   key={link.path}
                   to={link.path}
-                  onClick={() => setIsOpen(false)}
                   className={cn(
-                    "block px-3 py-2 rounded-md text-base font-medium",
-                    location.pathname === link.path
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    "px-2 px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-center",
+                    isActive 
+                      ? "text-blue-600 bg-blue-50/85 font-extrabold" 
+                      : "text-slate-600 hover:text-slate-950"
                   )}
                 >
                   {link.name}
                 </Link>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </nav>
   );
 }
