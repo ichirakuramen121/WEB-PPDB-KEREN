@@ -904,6 +904,29 @@ export default function AdminDashboard() {
                       {localSettings.logoSekolah && <img src={localSettings.logoSekolah} alt="Logo Sekolah" className="mt-2 h-16 object-contain border rounded bg-white p-1" />}
                     </div>
                     <div className="md:col-span-2">
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Favicon / Icon Tab Browser (Upload)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const compressed = await compressImage(file, 64, 0.7);
+                            setLocalSettings({...localSettings, faviconSekolah: compressed});
+                          }
+                        }}
+                        className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                      <input
+                        type="text"
+                        value={localSettings.faviconSekolah || ''}
+                        onChange={e => setLocalSettings({...localSettings, faviconSekolah: e.target.value})}
+                        placeholder="Atau tempel URL gambar favicon di sini (kosongkan untuk menggunakan logo sekolah)"
+                        className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                      />
+                      {localSettings.faviconSekolah && <img src={localSettings.faviconSekolah} alt="Favicon Sekolah" className="mt-2 h-8 w-8 object-contain border rounded bg-white p-1" />}
+                    </div>
+                    <div className="md:col-span-2">
                        <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Gambar Header Beranda (Upload)</label>
                       <input
                         type="file"
@@ -1214,16 +1237,43 @@ export default function AdminDashboard() {
                       <div className="border-t pt-6 dark:border-slate-700">
                         <div className="flex justify-between items-center mb-4">
                           <h4 className="text-md font-semibold">Dokumen yang Harus Disiapkan</h4>
-                          <button
-                            onClick={() => {
-                              const newDocs = [...(localSettings.panduanDokumen || [])];
-                              newDocs.push({ id: Date.now().toString(), icon: 'FileText', title: 'Dokumen Baru', description: 'Deskripsi dokumen' });
-                              setLocalSettings({...localSettings, panduanDokumen: newDocs});
-                            }}
-                            className="text-sm bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md hover:bg-blue-200 transition-colors dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60"
-                          >
-                            + Tambah Dokumen
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setLocalSettings({
+                                  ...localSettings,
+                                  panduanDokumen: [
+                                    { id: "1", icon: "FileDigit", title: "KK (Kartu Keluarga)", description: "Scan KK Asli. Pastikan NIK dan nama calon siswa tercantum dengan benar." },
+                                    { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Scan Akta Kelahiran Asli. Pastikan data nama dan tanggal lahir terbaca dengan jelas." },
+                                    { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili Asli bagi siswa yang mendaftar jalur zonasi jika alamat KK berbeda." },
+                                    { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) asli dari TK/RA asal." },
+                                    { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Piagam Penghargaan atau Sertifikat kejuaraan asli jika mendaftar jalur prestasi." },
+                                    { id: "6", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan surat keputusan penugasan mutasi perpindahan tugas orang tua asli dari instansi." }
+                                  ]
+                                });
+                                Swal.fire({
+                                  icon: 'success',
+                                  title: 'Pilihan Dokumen Reset',
+                                  text: 'Daftar dokumen persyaratan telah dipulihkan ke format standar sekolah dengan ikon yang disesuaikan!',
+                                  timer: 2000,
+                                  showConfirmButton: false
+                                });
+                              }}
+                              className="text-sm bg-slate-100 text-slate-700 px-3 py-1.5 rounded-md hover:bg-slate-200 transition-colors border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
+                            >
+                              Reset Dokumen Standar
+                            </button>
+                            <button
+                              onClick={() => {
+                                const newDocs = [...(localSettings.panduanDokumen || [])];
+                                newDocs.push({ id: Date.now().toString(), icon: 'FileText', title: 'Dokumen Baru', description: 'Deskripsi dokumen' });
+                                setLocalSettings({...localSettings, panduanDokumen: newDocs});
+                              }}
+                              className="text-sm bg-blue-100 text-blue-700 px-3 py-1.5 rounded-md hover:bg-blue-200 transition-colors dark:bg-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-900/60 font-semibold"
+                            >
+                              + Tambah Dokumen
+                            </button>
+                          </div>
                         </div>
                         <div className="space-y-4">
                           {(localSettings.panduanDokumen || []).map((doc, index) => (

@@ -33,6 +33,7 @@ async function startServer() {
     tanggalDaftarUlang: "2026-07-06",
     tanggalPengumuman: "2026-07-03",
     logoSekolah: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop",
+    faviconSekolah: "",
     tahunPendaftaran: "2026",
     koordinatSekolah: "-7.3259441, 108.2205556",
     tanggalCutoffUsia: "",
@@ -58,13 +59,12 @@ async function startServer() {
     panduanDeskripsi: "Persiapkan berkas dokumen pribadi sebelum mulai mengisi formulir pendaftaran SPMB online.",
     panduanPeringatan: "Pastikan semua dokumen di-scan atau difoto dengan jelas dan dapat terbaca. Format file yang disarankan adalah JPG, PNG, atau PDF dengan ukuran maksimal 2MB per file.",
     panduanDokumen: [
-      { id: "1", icon: "FileText", title: "Kartu Keluarga (Wajib)", description: "Scan Kartu Keluarga (KK) asli secara utuh dan jelas." },
-      { id: "2", icon: "FileBadge", title: "Akta Kelahiran (Wajib)", description: "Scan Akta Kelahiran asli secara utuh untuk verifikasi tanggal lahir." },
-      { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili asli bagi pendaftar jalur zonasi luar daerah." },
-      { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) dari TK/RA." },
-      { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Sertifikat atau Piagam Penghargaan prestasi akademik/non-akademik." },
-      { id: "6", icon: "FileDigit", title: "NISN (Opsional)", description: "Scan Surat Keterangan atau bukti kepemilikan NISN jika ada." },
-      { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan Surat Keputusan Mutasi/Pindahan Tugas Orang Tua dari instansi terkait." }
+      { id: "1", icon: "FileDigit", title: "KK (Kartu Keluarga)", description: "Scan KK Asli. Pastikan NIK dan nama calon siswa tercantum dengan benar." },
+      { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Scan Akta Kelahiran Asli. Pastikan data nama dan tanggal lahir terbaca dengan jelas." },
+      { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili Asli bagi siswa yang mendaftar jalur zonasi jika alamat KK berbeda." },
+      { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) asli dari TK/RA asal." },
+      { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Piagam Penghargaan atau Sertifikat kejuaraan asli jika mendaftar jalur prestasi." },
+      { id: "6", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan surat keputusan penugasan mutasi perpindahan tugas orang tua asli dari instansi." }
     ],
     panduanAlur: [
       "Siapkan seluruh dokumen persyaratan dalam bentuk file digital (foto/scan).",

@@ -47,6 +47,22 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Sync browser favicon with configured school logo or custom favicon link dynamically
+  useEffect(() => {
+    if (settings) {
+      const faviconUrl = settings.faviconSekolah || settings.logoSekolah || '/favicon.svg';
+      const faviconLink = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (faviconLink) {
+        faviconLink.href = faviconUrl;
+      } else {
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = faviconUrl;
+        document.head.appendChild(link);
+      }
+    }
+  }, [settings]);
+
   return (
     <SettingsContext.Provider value={{ settings, isLoading, refreshSettings: fetchSettings }}>
       {children}

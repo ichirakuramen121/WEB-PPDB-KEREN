@@ -33,6 +33,7 @@ export interface AppSettings {
   tanggalDaftarUlang?: string;
   tanggalPengumuman?: string;
   logoSekolah?: string;
+  faviconSekolah?: string;
   kopSurat?: string;
   namaKepalaSekolah?: string;
   tandaTanganKepalaSekolah?: string;
@@ -93,10 +94,13 @@ const getInitialMockSettings = (): AppSettings => {
     tanggalDaftarUlang: "2026-07-06",
     tanggalPengumuman: "2026-07-03",
     logoSekolah: "https://upload.wikimedia.org/wikipedia/commons/d/d1/Logo_Tut_Wuri_Handayani_Kemendikbud_RI.png",
+    faviconSekolah: "",
     tahunPendaftaran: "2026",
     koordinatSekolah: "-7.3259441, 108.2205556", // Real coordinates of SDN Citapen Tasikmalaya
     tanggalCutoffUsia: "", // Tanggal ditetapkan cutoff usia
-    sambutanKepalaSekolah: "Selamat datang di website resmi SPMB SDN Citapen. Kami berkomitmen untuk memberikan pelayanan pendidikan terbaik bagi putra-putri Anda. Mari bergabung bersama kami untuk mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan berprestasi.",
+    sambutanKepalaSekolah: "Selamat datang di website resmi SPMB SDN Citapen." + 
+      " Kami berkomitmen untuk memberikan pelayanan pendidikan terbaik bagi putra-putri Anda." + 
+      " Mari bergabung bersama kami untuk mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan berprestasi.",
     fotoKepalaSekolah: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&auto=format&fit=crop",
     visiSekolah: "Menjadi sekolah dasar unggulan yang menghasilkan lulusan berakhlak mulia, cerdas, terampil, dan berwawasan lingkungan menuju masa depan gemilang.",
     misiSekolah: "1. Menyelenggarakan pembelajaran yang aktif, inovatif, kreatif, efektif, dan menyenangkan (PAIKEM).\n2. Menanamkan nilai-nilai keagamaan dan budi pekerti luhur dalam kehidupan sehari-hari.\n3. Mengembangkan potensi, bakat, dan minat siswa melalui berbagai kegiatan ekstrakurikuler.\n4. Menciptakan lingkungan belajar yang bersih, sehat, rindang, aman, dan kondusif.",
@@ -118,13 +122,12 @@ const getInitialMockSettings = (): AppSettings => {
     panduanDeskripsi: "Persiapkan berkas dokumen pribadi sebelum mulai mengisi formulir pendaftaran SPMB online.",
     panduanPeringatan: "Pastikan semua dokumen di-scan atau difoto dengan jelas dan dapat terbaca. Format file yang disarankan adalah JPG, PNG, atau PDF dengan ukuran maksimal 2MB per file.",
     panduanDokumen: [
-      { id: "1", icon: "FileText", title: "Kartu Keluarga (Wajib)", description: "Dokumen Kartu Keluarga (KK) asli harus di-scan secara jelas dan utuh." },
-      { id: "2", icon: "FileBadge", title: "Akta Kelahiran (Wajib)", description: "Dokumen Akta Kelahiran asli harus di-scan secara jelas dan utuh." },
-      { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Dokumen Surat Keterangan Domisili asli harus di-scan secara jelas dan utuh bagi pendaftar luar daerah." },
-      { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Dokumen asli Ijazah atau Surat Keterangan Lulus TK/RA harus di-scan secara jelas." },
-      { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Sertifikat atau Piagam Penghargaan prestasi asli harus di-scan secara jelas." },
-      { id: "6", icon: "FileDigit", title: "NISN (Opsional)", description: "Bukti cetak lembar nomor induk siswa nasional (NISN) resmi harus di-scan secara jelas." },
-      { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Surat keputusan (SK) mutasi perpindahan tugas orang tua asli harus di-scan secara jelas." }
+      { id: "1", icon: "FileDigit", title: "KK (Kartu Keluarga)", description: "Scan KK Asli. Pastikan NIK dan nama calon siswa tercantum dengan benar." },
+      { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Scan Akta Kelahiran Asli. Pastikan data nama dan tanggal lahir terbaca dengan jelas." },
+      { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili Asli bagi siswa yang mendaftar jalur zonasi jika alamat KK berbeda." },
+      { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) asli dari TK/RA asal." },
+      { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Piagam Penghargaan atau Sertifikat kejuaraan asli jika mendaftar jalur prestasi." },
+      { id: "6", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan surat keputusan penugasan mutasi perpindahan tugas orang tua asli dari instansi." }
     ],
     panduanAlur: [
       "Siapkan seluruh dokumen persyaratan dalam bentuk file digital (foto/scan).",
