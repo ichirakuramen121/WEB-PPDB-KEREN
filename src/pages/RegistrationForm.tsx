@@ -235,10 +235,7 @@ export default function RegistrationForm() {
 
     // Content
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    
-    let startY = 60;
-    const lineHeight = 10;
+    doc.setFontSize(11);
     
     const formatDate = (dateString: string) => {
       if (!dateString) return '-';
@@ -249,60 +246,105 @@ export default function RegistrationForm() {
       const year = date.getFullYear();
       return `${day}/${month}/${year}`;
     };
+
+    // Filters non-file fields
+    const printableFields = getFieldsForSummary().filter(field => field.type !== 'file');
     
+    // Split into left and right columns
+    const half = Math.ceil(printableFields.length / 2);
+    const leftCol = printableFields.slice(0, half);
+    const rightCol = printableFields.slice(half);
+
+    // Draw Main Header sections
     doc.setFont("helvetica", "bold");
-    doc.text("No. Pendaftaran", 20, startY);
-    doc.text(":", 70, startY);
-    doc.text(noPendaftaran, 75, startY);
-    startY += lineHeight;
-
-    doc.setFont("helvetica", "normal");
+    doc.text("INFORMASI PENDAFTARAN", 15, 55);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, 57, 195, 57);
     
-    // Print fields
-    getFieldsForSummary().forEach(field => {
-      if (field.type !== 'file') {
-        if (startY > 260) {
-          doc.addPage();
-          startY = 20;
-        }
-
-        doc.text(field.label, 20, startY);
-        doc.text(":", 70, startY);
-        let value = formData[field.label] || '-';
-        if (field.type === 'date') {
-          value = formatDate(value);
-        }
-        
-        const splitText = doc.splitTextToSize(value, 115);
-        if (startY + (lineHeight * splitText.length) > 280) {
-           doc.addPage();
-           startY = 20;
-        }
-        
-        doc.text(splitText, 75, startY);
-        startY += lineHeight * splitText.length;
-      }
-    });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("No. Pendaftaran", 15, 65);
+    doc.setFont("helvetica", "normal");
+    doc.text(`: ${noPendaftaran}`, 50, 65);
 
     if (distance !== null) {
-      if (startY > 260) {
-        doc.addPage();
-        startY = 20;
-      }
-      doc.text("Jarak ke Sekolah", 20, startY);
-      doc.text(":", 70, startY);
-      doc.text(`${distance.toFixed(2)} km`, 75, startY);
-      startY += lineHeight;
+      doc.setFont("helvetica", "bold");
+      doc.text("Jarak ke Sekolah", 110, 65);
+      doc.setFont("helvetica", "normal");
+      doc.text(`: ${distance.toFixed(2)} km`, 145, 65);
     }
 
-    // Signatures / Footers
-    if (startY > 270) {
-      doc.addPage();
-      startY = 20;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("DATA FORMULIR CALON SISWA", 15, 75);
+    doc.line(15, 77, 195, 77);
+
+    doc.setFontSize(9);
+    let col1Y = 85;
+    leftCol.forEach(field => {
+      doc.setFont("helvetica", "bold");
+      const labelText = field.label;
+      const splitLabel = doc.splitTextToSize(labelText, 33);
+      doc.text(splitLabel, 15, col1Y);
+      
+      doc.setFont("helvetica", "normal");
+      let value = formData[field.label] || '-';
+      if (field.type === 'date') {
+        value = formatDate(value);
+      }
+      const splitVal = doc.splitTextToSize(String(value), 52);
+      doc.text(splitVal, 50, col1Y);
+      
+      const maxRows = Math.max(splitLabel.length, splitVal.length);
+      col1Y += maxRows * 5.5 + 2;
+    });
+
+    let col2Y = 85;
+    rightCol.forEach(field => {
+      doc.setFont("helvetica", "bold");
+      const labelText = field.label;
+      const splitLabel = doc.splitTextToSize(labelText, 33);
+      doc.text(splitLabel, 110, col2Y);
+      
+      doc.setFont("helvetica", "normal");
+      let value = formData[field.label] || '-';
+      if (field.type === 'date') {
+        value = formatDate(value);
+      }
+      const splitVal = doc.splitTextToSize(String(value), 52);
+      doc.text(splitVal, 145, col2Y);
+      
+      const maxRows = Math.max(splitLabel.length, splitVal.length);
+      col2Y += maxRows * 5.5 + 2;
+    });
+
+    const bottomY = 245;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, bottomY, 195, bottomY);
+    
+    // Barcode area
+    const barX = 15;
+    const barY = bottomY + 5;
+    const barHeight = 12;
+    doc.setFillColor(0, 0, 0);
+    const linePattern = [1, 2, 1, 3, 1, 1, 2, 1, 3, 2, 1, 1, 3, 1, 2, 1, 1, 2, 2, 1, 3];
+    let currentXOffset = 0;
+    for (let idx = 0; idx < linePattern.length; idx++) {
+      const w = linePattern[idx] * 0.45;
+      if (idx % 2 === 0) {
+        doc.rect(barX + currentXOffset, barY, w, barHeight, 'F');
+      }
+      currentXOffset += w + 0.45;
     }
-    doc.setFontSize(10);
+    doc.setFontSize(7);
+    doc.setFont('courier', 'normal');
+    doc.text(`*REG-${noPendaftaran}*`, barX, barY + barHeight + 4);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    doc.text("Simpan bukti pendaftaran ini untuk mengecek status kelulusan.", 105, 280, { align: "center" });
+    doc.text("Simpan bukti pendaftaran ini untuk mengecek status kelulusan secara berkala.", 72, bottomY + 10);
+    doc.text(`Dicetak secara otomatis pada: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB.`, 72, bottomY + 16);
     
     doc.save(`Bukti_Pendaftaran_${noPendaftaran}.pdf`);
   };
@@ -583,6 +625,97 @@ export default function RegistrationForm() {
               <option key={opt} value={opt}>{opt}</option>
             ))}
           </select>
+        );
+      case 'date':
+        const dateVal = formData[field.label] || '';
+        let currentYear = '';
+        let currentMonth = '';
+        let currentDay = '';
+        if (dateVal) {
+          const parts = dateVal.split('-');
+          if (parts.length === 3) {
+            currentYear = parts[0];
+            currentMonth = parts[1];
+            currentDay = parts[2];
+          }
+        }
+        
+        const handleDateChange = (type: 'day' | 'month' | 'year', val: string) => {
+          let y = currentYear;
+          let m = currentMonth;
+          let d = currentDay;
+          if (type === 'day') d = val.padStart(2, '0');
+          if (type === 'month') m = val.padStart(2, '0');
+          if (type === 'year') y = val;
+          
+          if (y || m || d) {
+            const combined = `${y || '2019'}-${m || '01'}-${d || '01'}`;
+            // Directly trigger change simulation
+            const fakeEvent = {
+              target: {
+                name: field.label,
+                value: combined
+              }
+            } as React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+            handleChange(fakeEvent);
+          }
+        };
+
+        const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+        const years = Array.from({ length: 25 }, (_, i) => String(new Date().getFullYear() - 1 - i)); // e.g. for students/kids, starting from past years
+        const monthsList = [
+          { value: '01', label: 'Januari' },
+          { value: '02', label: 'Februari' },
+          { value: '03', label: 'Maret' },
+          { value: '04', label: 'April' },
+          { value: '05', label: 'Mei' },
+          { value: '06', label: 'Juni' },
+          { value: '07', label: 'Juli' },
+          { value: '08', label: 'Agustus' },
+          { value: '09', label: 'September' },
+          { value: '10', label: 'Oktober' },
+          { value: '11', label: 'November' },
+          { value: '12', label: 'Desember' }
+        ];
+
+        return (
+          <div className="space-y-2 w-full">
+            <div className="grid grid-cols-3 gap-2">
+              <select
+                value={currentDay}
+                onChange={(e) => handleDateChange('day', e.target.value)}
+                className={`${commonClasses} bg-white appearance-none cursor-pointer`}
+                required={field.required}
+              >
+                <option value="">Hari</option>
+                {days.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+
+              <select
+                value={currentMonth}
+                onChange={(e) => handleDateChange('month', e.target.value)}
+                className={`${commonClasses} bg-white appearance-none cursor-pointer`}
+                required={field.required}
+              >
+                <option value="">Bulan</option>
+                {monthsList.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+
+              <select
+                value={currentYear}
+                onChange={(e) => handleDateChange('year', e.target.value)}
+                className={`${commonClasses} bg-white appearance-none cursor-pointer`}
+                required={field.required}
+              >
+                <option value="">Tahun</option>
+                {years.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+            <div className="text-[11px] text-amber-600 font-medium flex items-center gap-1.5 bg-amber-50/70 p-2 rounded-xl border border-amber-100">
+              <span className="flex-shrink-0 text-xs">⚠️</span>
+              <span><strong>PERHATIAN:</strong> Mohon teliti dalam memasukkan Tanggal Lahir (HARI/BULAN/TAHUN) untuk menghindari kesalahan format pada perangkat lain.</span>
+            </div>
+          </div>
         );
       case 'file':
         const isDragging = dragActive[field.label];

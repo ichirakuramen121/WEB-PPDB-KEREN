@@ -188,9 +188,16 @@ async function startServer() {
       isUnique = !registrations.some((r: any) => r["No Pendaftaran"] === noPendaftaran);
     }
 
+    const getJakartaTimeISO = () => {
+      const d = new Date();
+      const tzOffset = 7 * 60; // WIB is UTC+7
+      const localTime = new Date(d.getTime() + tzOffset * 60 * 1000);
+      return localTime.toISOString().replace('Z', '+07:00');
+    };
+
     const newEntry: any = {
       ...data,
-      Timestamp: new Date().toISOString(),
+      Timestamp: getJakartaTimeISO(),
       "No Pendaftaran": noPendaftaran,
       Status: "Proses"
     };

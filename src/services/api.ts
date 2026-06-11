@@ -1,7 +1,7 @@
 // Service to interact with Google Apps Script Backend
 
 // To use the real backend, replace this URL with your deployed Google Apps Script Web App URL
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyPoDvLtAKh8hrsTH2uESPjQP_v5StdF0N9f3-8hFeU7oYhSrObl9LnogA5BPjZ3IzW/exec"; 
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxfbfCnQQ84kTnOoVPK19oC8qL8nu548ax1CiVuXo5XShZby1EJ10Q3M7AkCOAEZATK/exec"; 
 
 export interface FormField {
   id: string;
@@ -182,9 +182,15 @@ const getInitialMockData = (): AdminData[] => {
       console.error("Failed to parse mock data from localStorage", e);
     }
   }
+  const getInitialJakartaTimeISO = () => {
+    const d = new Date();
+    const tzOffset = 7 * 60; // WIB is UTC+7
+    const localTime = new Date(d.getTime() + tzOffset * 60 * 1000);
+    return localTime.toISOString().replace('Z', '+07:00');
+  };
   const defaultMockData: AdminData[] = [
     {
-      Timestamp: new Date().toISOString(),
+      Timestamp: getInitialJakartaTimeISO(),
       'No Pendaftaran': "SPMB-2026-001",
       'Nama Lengkap': "Budi Santoso",
       'NIK': "1234567890123456",
@@ -452,9 +458,17 @@ export const submitRegistration = async (data: RegistrationData) => {
       isUnique = !mockData.some(d => d['No Pendaftaran'] === noPendaftaran);
     }
 
+    // Get current time adjusted to Asia/Jakarta (UTC+7)
+    const getJakartaTimeISO = () => {
+      const d = new Date();
+      const tzOffset = 7 * 60; // WIB is UTC+7
+      const localTime = new Date(d.getTime() + tzOffset * 60 * 1000);
+      return localTime.toISOString().replace('Z', '+07:00');
+    };
+
     const newEntry: AdminData = {
       ...data,
-      Timestamp: new Date().toISOString(),
+      Timestamp: getJakartaTimeISO(),
       'No Pendaftaran': noPendaftaran,
       Status: 'Proses'
     };

@@ -250,13 +250,29 @@ export default function CheckStatus() {
       }
     }
     
-    if (safeTtd) {
-      try {
-        const ttdFormat = safeTtd.includes('image/png') ? 'PNG' : 'JPEG';
-        doc.addImage(safeTtd, ttdFormat, 140, currentY + 10, 40, 20);
-      } catch (e) {
-        console.error("Error adding tanda tangan", e);
+    // Tanda tangan kepala sekolah menggunakan barcode agar rapi sesuai instruksi
+    try {
+      const barcodeX = 140;
+      const barcodeY = currentY + 10;
+      const barcodeHeight = 12;
+      doc.setFillColor(0, 0, 0);
+      const linePattern = [1, 2, 1, 3, 1, 1, 2, 1, 3, 2, 1, 1, 3, 1, 2, 1, 1, 2, 2, 1, 3];
+      let currentXOffset = 0;
+      for (let idx = 0; idx < linePattern.length; idx++) {
+        const w = linePattern[idx] * 0.45;
+        if (idx % 2 === 0) {
+          doc.rect(barcodeX + currentXOffset, barcodeY, w, barcodeHeight, 'F');
+        }
+        currentXOffset += w + 0.45;
       }
+      doc.setFontSize(6.5);
+      doc.setFont('courier', 'normal');
+      doc.text(`*SIGN-KS-${data.noPendaftaran || settings?.nipKepalaSekolah || 'WIB'}*`, barcodeX, barcodeY + barcodeHeight + 4);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(7);
+      doc.text("Tanda Tangan Elektronik Sah", barcodeX, barcodeY + barcodeHeight + 8);
+    } catch (e) {
+      console.error("Error drawing barcode signature", e);
     }
     
     doc.setFont('helvetica', 'bold');

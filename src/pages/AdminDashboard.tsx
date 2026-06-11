@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getRegistrations, updateStatus, AdminData, updateSettings, getSettings } from '../services/api';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -141,6 +142,54 @@ export default function AdminDashboard() {
     }
     return null;
   });
+
+  const chartData = useMemo(() => {
+    const dailyCounts: { [isoDate: string]: number } = {};
+    
+    data.forEach(item => {
+      if (!item.Timestamp) return;
+      try {
+        const date = new Date(item.Timestamp);
+        if (isNaN(date.getTime())) return;
+        
+        // Formatter in Asia/Jakarta timezone
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Jakarta',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        const parts = formatter.formatToParts(date);
+        const year = parts.find(p => p.type === 'year')?.value || '';
+        const month = parts.find(p => p.type === 'month')?.value || '';
+        const day = parts.find(p => p.type === 'day')?.value || '';
+        const isoDate = `${year}-${month}-${day}`;
+        
+        dailyCounts[isoDate] = (dailyCounts[isoDate] || 0) + 1;
+      } catch (e) {
+        console.error("Error formatting date for chart:", e);
+      }
+    });
+
+    // Sort ISO dates
+    const sortedIsoDates = Object.keys(dailyCounts).sort();
+
+    // Map to formatted readable dates
+    return sortedIsoDates.map(isoStr => {
+      const parts = isoStr.split('-');
+      let displayLabel = isoStr;
+      if (parts.length === 3) {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+        const dayVal = parseInt(parts[2], 10);
+        const monVal = parseInt(parts[1], 10) - 1;
+        displayLabel = `${dayVal} ${months[monVal]}`;
+      }
+      return {
+        tanggal: displayLabel,
+        'Pendaftar': dailyCounts[isoStr]
+      };
+    });
+  }, [data]);
 
   const getFieldValue = (item: any, fieldId: string) => {
     const field = settings?.formFields?.find(f => f.id === fieldId);
@@ -417,66 +466,101 @@ export default function AdminDashboard() {
 
     // Content
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     
-    let startY = 60;
-    const lineHeight = 10;
+    const printableFields = (settings?.formFields || []).filter(field => field.type !== 'file');
+    const half = Math.ceil(printableFields.length / 2);
+    const leftCol = printableFields.slice(0, half);
+    const rightCol = printableFields.slice(half);
+
+    // Draw Main Header sections
+    doc.setFont("helvetica", "bold");
+    doc.text("INFORMASI STATUS", 15, 55);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, 57, 195, 57);
     
+    doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text("No. Pendaftaran", 20, startY);
-    doc.text(":", 70, startY);
+    doc.text("No. Pendaftaran", 15, 65);
     doc.setFont("helvetica", "normal");
-    doc.text(student['No Pendaftaran'], 75, startY);
-    startY += lineHeight;
+    doc.text(`: ${student['No Pendaftaran']}`, 50, 65);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Status Kelulusan", 20, startY);
-    doc.text(":", 70, startY);
+    doc.text("Status Kelulusan", 110, 65);
     doc.setFont("helvetica", "normal");
-    doc.text(student.Status, 75, startY);
-    startY += lineHeight;
+    doc.text(`: ${student.Status}`, 145, 65);
 
-    settings?.formFields?.forEach(field => {
-      if (field.type !== 'file') {
-        if (startY > 260) {
-          doc.addPage();
-          startY = 20;
-        }
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("DATA FORMULIR SISWA", 15, 75);
+    doc.line(15, 77, 195, 77);
 
-        doc.setFont("helvetica", "bold");
-        doc.text(field.label, 20, startY);
-        doc.text(":", 70, startY);
-        
-        doc.setFont("helvetica", "normal");
-        let value = student[field.label] || '-';
-        if (field.type === 'date') {
-          value = formatDate(value);
-        }
-        
-        // Handle long text
-        const splitText = doc.splitTextToSize(String(value), 115);
-        
-        if (startY + (lineHeight * splitText.length) > 280) {
-           doc.addPage();
-           startY = 20;
-        }
-        
-        doc.text(splitText, 75, startY);
-        startY += lineHeight * splitText.length;
+    doc.setFontSize(9);
+    let col1Y = 85;
+    leftCol.forEach(field => {
+      doc.setFont("helvetica", "bold");
+      const labelText = field.label;
+      const splitLabel = doc.splitTextToSize(labelText, 33);
+      doc.text(splitLabel, 15, col1Y);
+      
+      doc.setFont("helvetica", "normal");
+      let value = student[field.label] || '-';
+      if (field.type === 'date') {
+        value = formatDate(value);
       }
+      const splitVal = doc.splitTextToSize(String(value), 52);
+      doc.text(splitVal, 50, col1Y);
+      
+      const maxRows = Math.max(splitLabel.length, splitVal.length);
+      col1Y += maxRows * 5.5 + 2;
     });
 
-    // Footer
-    if (startY > 250) {
-      doc.addPage();
-      startY = 20;
-    }
+    let col2Y = 85;
+    rightCol.forEach(field => {
+      doc.setFont("helvetica", "bold");
+      const labelText = field.label;
+      const splitLabel = doc.splitTextToSize(labelText, 33);
+      doc.text(splitLabel, 110, col2Y);
+      
+      doc.setFont("helvetica", "normal");
+      let value = student[field.label] || '-';
+      if (field.type === 'date') {
+        value = formatDate(value);
+      }
+      const splitVal = doc.splitTextToSize(String(value), 52);
+      doc.text(splitVal, 145, col2Y);
+      
+      const maxRows = Math.max(splitLabel.length, splitVal.length);
+      col2Y += maxRows * 5.5 + 2;
+    });
+
+    const bottomY = 245;
     doc.setDrawColor(200, 200, 200);
-    doc.line(20, startY + 10, 190, startY + 10);
-    doc.setFontSize(10);
+    doc.line(15, bottomY, 195, bottomY);
+    
+    // Barcode area
+    const barX = 15;
+    const barY = bottomY + 5;
+    const barHeight = 12;
+    doc.setFillColor(0, 0, 0);
+    const linePattern = [1, 2, 1, 3, 1, 1, 2, 1, 3, 2, 1, 1, 3, 1, 2, 1, 1, 2, 2, 1, 3];
+    let currentXOffset = 0;
+    for (let idx = 0; idx < linePattern.length; idx++) {
+      const w = linePattern[idx] * 0.45;
+      if (idx % 2 === 0) {
+        doc.rect(barX + currentXOffset, barY, w, barHeight, 'F');
+      }
+      currentXOffset += w + 0.45;
+    }
+    doc.setFontSize(7);
+    doc.setFont('courier', 'normal');
+    doc.text(`*REG-${student['No Pendaftaran']}*`, barX, barY + barHeight + 4);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Kartu ini adalah bukti sah pendaftaran SPMB ${settings?.namaSekolah || 'Sekolah'}.`, 105, startY + 20, { align: "center" });
-    doc.text(`Dicetak pada: ${new Date().toLocaleString()}`, 105, startY + 27, { align: "center" });
+    doc.text(`Kartu ini adalah bukti sah pendaftaran SPMB ${settings?.namaSekolah || 'Sekolah'}.`, 72, bottomY + 10);
+    doc.text(`Dicetak secara otomatis pada: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB.`, 72, bottomY + 16);
 
     doc.save(`Kartu_SPMB_${student['No Pendaftaran']}.pdf`);
   };
@@ -601,6 +685,66 @@ export default function AdminDashboard() {
                   <span className="text-3xl font-bold">{stat.value}</span>
                 </div>
               ))}
+            </div>
+
+            {/* Recharts Daily Registration Trend */}
+            <div className={cn("rounded-2xl border shadow-sm p-5 mb-6 transition-colors", isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200")}>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className={cn("text-base font-bold", isDarkMode ? "text-white" : "text-slate-800")}>Grafik Tren Pendaftaran Harian</h3>
+                  <p className={cn("text-xs font-medium mt-0.5", isDarkMode ? "text-slate-400" : "text-slate-500")}>Statistik ditarik realtime berdasarkan Waktu Indonesia Barat (WIB / Asia/Jakarta)</p>
+                </div>
+              </div>
+              
+              {chartData.length === 0 ? (
+                <div className="h-48 flex items-center justify-center border border-dashed rounded-xl border-slate-300 dark:border-slate-700 text-slate-400 italic text-sm">
+                  Belum ada data pendaftar harian untuk ditampilkan.
+                </div>
+              ) : (
+                <div className="h-72 w-full mt-2 select-none">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorPendaftar" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#334155" : "#e2e8f0"} />
+                      <XAxis 
+                        dataKey="tanggal" 
+                        tick={{ fill: isDarkMode ? "#94a3b8" : "#64748b", fontSize: 11 }} 
+                        axisLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
+                        tickLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
+                      />
+                      <YAxis 
+                        allowDecimals={false}
+                        tick={{ fill: isDarkMode ? "#94a3b8" : "#64748b", fontSize: 11 }}
+                        axisLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
+                        tickLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: isDarkMode ? "#0f172a" : "#ffffff", 
+                          borderColor: isDarkMode ? "#334155" : "#e2e8f0",
+                          color: isDarkMode ? "#ffffff" : "#0f172a",
+                          borderRadius: "0.75rem",
+                          fontSize: "12px",
+                          fontWeight: "600"
+                        }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="Pendaftar" 
+                        stroke="#3b82f6" 
+                        strokeWidth={3} 
+                        fillOpacity={1} 
+                        fill="url(#colorPendaftar)" 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
 
             {/* Filters & Search */}
