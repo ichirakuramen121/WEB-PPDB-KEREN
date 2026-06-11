@@ -84,7 +84,7 @@ function doPost(e) {
     
     if (data.action === "login") return handleLogin(data.username, data.password);
     if (data.action === "checkStatus") return handleCheckStatus(data.noPendaftaran);
-    if (data.action === "updateStatus") return updateStatus(data.noPendaftaran, data.newStatus);
+    if (data.action === "updateStatus") return updateStatus(data.noPendaftaran, data.newStatus, data.alasan);
     if (data.action === "updateSettings") return handleUpdateSettings(data.settings);
     
     return handleRegistration(data);
@@ -292,21 +292,45 @@ function handleRegistration(data) {
   let headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   
   // Generate No Pendaftaran
-  const year = new Date().getFullYear();
-  const lastRow = sheet.getLastRow();
-  let nextId = 1;
-  if (lastRow > 1) {
-    // Find No Pendaftaran column index
-    const noRegIdx = headers.indexOf("No Pendaftaran");
-    if (noRegIdx !== -1) {
-      const lastNo = sheet.getRange(lastRow, noRegIdx + 1).getValue();
-      const parts = String(lastNo).split("-");
-      if (parts.length === 3) {
-        nextId = parseInt(parts[2], 10) + 1;
+  let activeYear = new Date().getFullYear().toString();
+  if (settingsSheet) {
+    const settingsData = settingsSheet.getDataRange().getValues();
+    for (let i = 1; i < settingsData.length; i++) {
+      if (settingsData[i][0] === "tahunPendaftaran" && settingsData[i][1]) {
+        activeYear = String(settingsData[i][1]).trim();
+        break;
       }
     }
   }
-  const noPendaftaran = `PPDB-${year}-${String(nextId).padStart(3, '0')}`;
+
+  const lastRow = sheet.getLastRow();
+  // Generate secure unique 4-character random alphanumeric code
+  function generateRandomCode(length) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  // Get existing No Pendaftaran
+  const noRegIdx = headers.indexOf("No Pendaftaran");
+  var existingNo = [];
+  if (lastRow > 1 && noRegIdx !== -1) {
+    var rawNos = sheet.getRange(2, noRegIdx + 1, lastRow - 1, 1).getValues();
+    for (var rIdx = 0; rIdx < rawNos.length; rIdx++) {
+      existingNo.push(String(rawNos[rIdx][0]));
+    }
+  }
+
+  var noPendaftaran = "";
+  var isUnique = false;
+  while (!isUnique) {
+    var code = generateRandomCode(4);
+    noPendaftaran = "SPMB-" + activeYear + "-" + code;
+    isUnique = existingNo.indexOf(noPendaftaran) === -1;
+  }
   
   const folder = getOrCreateFolder(FOLDER_NAME);
   const rowData = new Array(headers.length).fill("");
@@ -372,6 +396,7 @@ function handleCheckStatus(noPendaftaran) {
   const noRegIdx = headers.indexOf("No Pendaftaran");
   const namaIdx = headers.indexOf("Nama Lengkap");
   const statusIdx = headers.indexOf("Status");
+  const alasanIdx = headers.indexOf("Alasan Penolakan");
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][noRegIdx] === noPendaftaran) {
@@ -380,7 +405,8 @@ function handleCheckStatus(noPendaftaran) {
         data: {
           noPendaftaran: data[i][noRegIdx],
           namaLengkap: namaIdx !== -1 ? data[i][namaIdx] : "Siswa",
-          status: statusIdx !== -1 ? data[i][statusIdx] : "Proses"
+          status: statusIdx !== -1 ? data[i][statusIdx] : "Proses",
+          alasanPenolakan: (alasanIdx !== -1 && data[i][alasanIdx]) ? String(data[i][alasanIdx]) : ""
         }
       })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -388,17 +414,21 @@ function handleCheckStatus(noPendaftaran) {
   return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Nomor pendaftaran tidak ditemukan" })).setMimeType(ContentService.MimeType.JSON);
 }
 
-function updateStatus(noPendaftaran, newStatus) {
+function updateStatus(noPendaftaran, newStatus, alasan) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAME);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   const noRegIdx = headers.indexOf("No Pendaftaran");
   const statusIdx = headers.indexOf("Status");
+  const alasanIdx = headers.indexOf("Alasan Penolakan");
   
   for (let i = 1; i < data.length; i++) {
     if (data[i][noRegIdx] === noPendaftaran) {
       sheet.getRange(i + 1, statusIdx + 1).setValue(newStatus);
+      if (alasanIdx !== -1) {
+        sheet.getRange(i + 1, alasanIdx + 1).setValue(alasan || "");
+      }
       return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Status berhasil diupdate" })).setMimeType(ContentService.MimeType.JSON);
     }
   }

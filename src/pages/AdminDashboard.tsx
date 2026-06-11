@@ -867,7 +867,7 @@ export default function AdminDashboard() {
                         <label className={cn("block text-sm font-semibold mb-1", isDarkMode ? "text-blue-300" : "text-blue-700")}>Tanggal & Waktu Pembukaan Pendaftaran (Otomatis)</label>
                         <input
                           type="datetime-local"
-                          value={localSettings.tanggalPembukaanPendaftaran || '2026-06-29T09:00'}
+                          value={localSettings.tanggalPembukaanPendaftaran || '2026-06-29T08:00'}
                           onChange={e => setLocalSettings({...localSettings, tanggalPembukaanPendaftaran: e.target.value})}
                           className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                         />
@@ -1432,8 +1432,9 @@ export default function AdminDashboard() {
                                     { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Scan Akta Kelahiran Asli. Pastikan data nama dan tanggal lahir terbaca dengan jelas." },
                                     { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili Asli bagi siswa yang mendaftar jalur zonasi jika alamat KK berbeda." },
                                     { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) asli dari TK/RA asal." },
-                                    { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Piagam Penghargaan atau Sertifikat kejuaraan asli jika mendaftar jalur prestasi." },
-                                    { id: "6", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan surat keputusan penugasan mutasi perpindahan tugas orang tua asli dari instansi." }
+                                    { id: "5", icon: "FileDigit", title: "NISN (Nomor Induk Siswa Nasional)", description: "Bukti cetak lembar NISN resmi pendaftar dari situs Kemendikbud." },
+                                    { id: "6", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Piagam Penghargaan atau Sertifikat kejuaraan asli jika mendaftar jalur prestasi." },
+                                    { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan surat keputusan penugasan mutasi perpindahan tugas orang tua asli dari instansi." }
                                   ]
                                 });
                                 Swal.fire({

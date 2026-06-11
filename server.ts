@@ -63,8 +63,9 @@ async function startServer() {
       { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Scan Akta Kelahiran Asli. Pastikan data nama dan tanggal lahir terbaca dengan jelas." },
       { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili Asli bagi siswa yang mendaftar jalur zonasi jika alamat KK berbeda." },
       { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) asli dari TK/RA asal." },
-      { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Piagam Penghargaan atau Sertifikat kejuaraan asli jika mendaftar jalur prestasi." },
-      { id: "6", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan surat keputusan penugasan mutasi perpindahan tugas orang tua asli dari instansi." }
+      { id: "5", icon: "FileDigit", title: "NISN (Nomor Induk Siswa Nasional)", description: "Bukti cetak lembar NISN resmi pendaftar dari situs Kemendikbud." },
+      { id: "6", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Piagam Penghargaan atau Sertifikat kejuaraan asli jika mendaftar jalur prestasi." },
+      { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan surat keputusan penugasan mutasi perpindahan tugas orang tua asli dari instansi." }
     ],
     panduanAlur: [
       "Siapkan seluruh dokumen persyaratan dalam bentuk file digital (foto/scan).",
@@ -81,7 +82,7 @@ async function startServer() {
     rapatWaktu: "08:00 WIB s.d Selesai",
     rapatTempat: "Aula Serbaguna SDN Citapen Tasikmalaya",
     rapatDeskripsi: "Diharapkan kehadiran Bapak/Ibu Orang Tua/Wali Calon Siswa yang telah dinyatakan Diterima/Lulus untuk menghadiri Rapat Koordinasi Awal Tahun Pelajaran menjelang pelaksanaan Kegiatan Belajar Mengajar (KBM). Kehadiran bersifat penting.",
-    tanggalPembukaanPendaftaran: "2026-06-29T09:00"
+    tanggalPembukaanPendaftaran: "2026-06-29T08:00"
   };
 
   const loadSettings = async () => {
@@ -168,10 +169,24 @@ async function startServer() {
 
     const data = req.body;
     let year = settings.tahunPendaftaran || new Date().getFullYear().toString();
-    year = year.replace(/\//g, "-");
 
-    const newIndex = registrations.length + 1;
-    const noPendaftaran = `SPMB-${year}-${String(newIndex).padStart(3, "0")}`;
+    // Helper to generate a 4-character random alphanumeric string
+    const generateRandomCode = (length = 4): string => {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let result = "";
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+
+    let noPendaftaran = "";
+    let isUnique = false;
+    while (!isUnique) {
+      const code = generateRandomCode(4);
+      noPendaftaran = `SPMB-${year}-${code}`;
+      isUnique = !registrations.some((r: any) => r["No Pendaftaran"] === noPendaftaran);
+    }
 
     const newEntry: any = {
       ...data,

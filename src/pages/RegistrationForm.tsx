@@ -1080,7 +1080,7 @@ export default function RegistrationForm() {
                         </div>
                         <div className="text-xs text-slate-600 leading-relaxed font-semibold">
                           <span className="font-extrabold text-slate-800 text-sm block mb-1">Pakta Integritas Pendaftaran SPMB</span>
-                          Saya menjamin dengan penuh kesadaran dan tanpa paksaan bahwa seluruh keseluruhan data dokumen berkas isian digital yang tercantum dalam pendaftaran PPDB online ini adalah sah, akurat, dan sesuai kebenaran aslinya. Apabila ditemukan pemalsuan identitas atau data ganda, saya bersedia dicoret dan didiskualifikasi dari daftar seleksi resmi penerimaan sekolah baru ini.
+                          Saya menjamin dengan penuh kesadaran dan tanpa paksaan bahwa seluruh keseluruhan data dokumen berkas isian digital yang tercantum dalam pendaftaran SPMB online ini adalah sah, akurat, dan sesuai kebenaran aslinya. Apabila ditemukan pemalsuan identitas atau data ganda, saya bersedia dicoret dan didiskualifikasi dari daftar seleksi resmi penerimaan sekolah baru ini.
                         </div>
                       </label>
                     </div>

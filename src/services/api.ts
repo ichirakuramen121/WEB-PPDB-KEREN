@@ -128,8 +128,9 @@ const getInitialMockSettings = (): AppSettings => {
       { id: "2", icon: "FileBadge", title: "Akta Kelahiran", description: "Scan Akta Kelahiran Asli. Pastikan data nama dan tanggal lahir terbaca dengan jelas." },
       { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Scan Surat Keterangan Domisili Asli bagi siswa yang mendaftar jalur zonasi jika alamat KK berbeda." },
       { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Scan Ijazah atau Surat Keterangan Lulus (SKL) asli dari TK/RA asal." },
-      { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Piagam Penghargaan atau Sertifikat kejuaraan asli jika mendaftar jalur prestasi." },
-      { id: "6", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan surat keputusan penugasan mutasi perpindahan tugas orang tua asli dari instansi." }
+      { id: "5", icon: "FileDigit", title: "NISN (Nomor Induk Siswa Nasional)", description: "Bukti cetak lembar NISN resmi pendaftar dari situs Kemendikbud." },
+      { id: "6", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Scan Piagam Penghargaan atau Sertifikat kejuaraan asli jika mendaftar jalur prestasi." },
+      { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Scan surat keputusan penugasan mutasi perpindahan tugas orang tua asli dari instansi." }
     ],
     panduanAlur: [
       "Siapkan seluruh dokumen persyaratan dalam bentuk file digital (foto/scan).",
@@ -146,7 +147,7 @@ const getInitialMockSettings = (): AppSettings => {
     rapatWaktu: "08:00 WIB s.d Selesai",
     rapatTempat: "Aula Serbaguna SDN Citapen Tasikmalaya",
     rapatDeskripsi: "Diharapkan kehadiran Bapak/Ibu Orang Tua/Wali Calon Siswa yang telah dinyatakan Diterima/Lulus untuk menghadiri Rapat Koordinasi Awal Tahun Pelajaran menjelang pelaksanaan Kegiatan Belajar Mengajar (KBM). Kehadiran bersifat penting.",
-    tanggalPembukaanPendaftaran: "2026-06-29T09:00"
+    tanggalPembukaanPendaftaran: "2026-06-29T08:00"
   };
 
   const stored = localStorage.getItem('mockSettings');
@@ -232,9 +233,9 @@ export function getScheduledStatus(settings: AppSettings | null, currentDate: Da
   // Otherwise, default/automatic schedule based on settings
   const t = currentDate.getTime(); // System ISO UTC timestamp
   
-  // Calculate baseTime from settings or fallback to default June 29, 2026, 09:00 WIB
-  let baseTime = Date.UTC(2026, 5, 29, 2, 0, 0); // Default to UTC for June 29, 2026 09:00 WIB (02:00 UTC)
-  let formattedDateStr = "29-30 Juni 2026 pukul 09.00 - 12.00 WIB";
+  // Calculate baseTime from settings or fallback to default June 29, 2026, 08:00 WIB
+  let baseTime = Date.UTC(2026, 5, 29, 1, 0, 0); // Default to UTC for June 29, 2026 08:00 WIB (01:00 UTC)
+  let formattedDateStr = "29-30 Juni 2026 pukul 08.00 - 12.00 WIB";
   let hasCustomDate = false;
 
   if (settings.tanggalPembukaanPendaftaran) {
@@ -259,9 +260,9 @@ export function getScheduledStatus(settings: AppSettings | null, currentDate: Da
   }
 
   const msDay1Start = baseTime;
-  const msDay1End = baseTime + (3 * 60 * 60 * 1000); // 3 hours duration
+  const msDay1End = baseTime + (4 * 60 * 60 * 1000); // 4 hours duration (08.00 - 12.00)
   const msDay2Start = baseTime + (24 * 60 * 60 * 1000); // Next day same time
-  const msDay2End = msDay2Start + (3 * 60 * 60 * 1000); // 3 hours duration
+  const msDay2End = msDay2Start + (4 * 60 * 60 * 1000); // 4 hours duration (08.00 - 12.00)
 
   if (t < msDay1Start) {
     return {
@@ -271,19 +272,19 @@ export function getScheduledStatus(settings: AppSettings | null, currentDate: Da
   } else if (t >= msDay1Start && t < msDay1End) {
     return {
       status: 'Buka',
-      info: 'Pendaftaran Hari Pertama Sedang Berlangsung (Pukul 09.00 - 12.00 WIB).'
+      info: 'Pendaftaran Hari Pertama Sedang Berlangsung (Pukul 08.00 - 12.00 WIB).'
     };
   } else if (t >= msDay1End && t < msDay2Start) {
     return {
       status: 'Tutup',
       info: hasCustomDate 
         ? 'Pendaftaran hari ke-1 selesai. Pendaftaran hari ke-2 akan dibuka esok hari.'
-        : 'Pendaftaran dibuka esok hari tanggal 30 Juni pukul 09.00-12.00.'
+        : 'Pendaftaran dibuka esok hari tanggal 30 Juni pukul 08.00-12.00.'
     };
   } else if (t >= msDay2Start && t < msDay2End) {
     return {
       status: 'Buka',
-      info: 'Pendaftaran Hari Kedua Sedang Berlangsung (Pukul 09.00 - 12.00 WIB).'
+      info: 'Pendaftaran Hari Kedua Sedang Berlangsung (Pukul 08.00 - 12.00 WIB).'
     };
   } else {
     return {
@@ -432,11 +433,29 @@ export const submitRegistration = async (data: RegistrationData) => {
       return { status: "error", message: scheduled.info };
     }
     let year = mockSettings.tahunPendaftaran || new Date().getFullYear().toString();
-    year = year.replace(/\//g, '-');
+    
+    // Generate secure unique 4-character random alphanumeric code
+    const generateRandomCode = (length = 4): string => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    };
+
+    let noPendaftaran = "";
+    let isUnique = false;
+    while (!isUnique) {
+      const code = generateRandomCode(4);
+      noPendaftaran = `SPMB-${year}-${code}`;
+      isUnique = !mockData.some(d => d['No Pendaftaran'] === noPendaftaran);
+    }
+
     const newEntry: AdminData = {
       ...data,
       Timestamp: new Date().toISOString(),
-      'No Pendaftaran': `SPMB-${year}-${String(mockData.length + 1).padStart(3, '0')}`,
+      'No Pendaftaran': noPendaftaran,
       Status: 'Proses'
     };
     saveMockData([...mockData, newEntry]);

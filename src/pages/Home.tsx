@@ -14,7 +14,7 @@ export default function Home() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
 
   useEffect(() => {
-    const targetDateStr = settings?.tanggalPembukaanPendaftaran || "2026-06-29T09:00";
+    const targetDateStr = settings?.tanggalPembukaanPendaftaran || "2026-06-29T08:00";
     const target = new Date(targetDateStr);
 
     const updateTimer = () => {
@@ -264,7 +264,7 @@ export default function Home() {
               <div className="absolute top-0 left-0 w-2 h-full bg-blue-600"></div>
               <div className="text-sm font-bold text-blue-600 uppercase mb-2">1. Masa Pendaftaran</div>
               <h3 className="text-xl font-bold text-slate-900 mb-1">29 - 30 Juni 2026</h3>
-              <p className="text-blue-600 font-semibold text-sm mb-4">Pukul 09.00 - 12.00 WIB</p>
+              <p className="text-blue-600 font-semibold text-sm mb-4">Pukul 08.00 - 12.00 WIB</p>
               <p className="text-slate-600 text-sm leading-relaxed">Pendaftaran berkas dilakukan secara mandiri secara mengisi formulir online di website resmi ini.</p>
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 hover:shadow-md transition-all relative overflow-hidden group">

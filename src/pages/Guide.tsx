@@ -57,8 +57,8 @@ export default function Guide() {
     { id: "2", icon: "FileBadge", title: "Akta Kelahiran (Wajib)", description: "Dokumen Akta Kelahiran asli harus di-scan secara jelas dan utuh." },
     { id: "3", icon: "Home", title: "Surat Keterangan Domisili (Opsional)", description: "Dokumen Surat Keterangan Domisili asli harus di-scan secara jelas dan utuh bagi pendaftar luar daerah." },
     { id: "4", icon: "School", title: "Ijazah TK/RA (Opsional)", description: "Dokumen asli Ijazah atau Surat Keterangan Lulus TK/RA harus di-scan secara jelas." },
-    { id: "5", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Sertifikat atau Piagam Penghargaan prestasi asli harus di-scan secara jelas." },
-    { id: "6", icon: "FileDigit", title: "NISN (Opsional)", description: "Bukti cetak lembar nomor induk siswa nasional (NISN) resmi harus di-scan secara jelas." },
+    { id: "5", icon: "FileDigit", title: "NISN (Nomor Induk Siswa Nasional)", description: "Bukti cetak lembar NISN resmi pendaftar dari situs Kemendikbud." },
+    { id: "6", icon: "Award", title: "Piagam Prestasi (Opsional)", description: "Sertifikat atau Piagam Penghargaan prestasi asli harus di-scan secara jelas." },
     { id: "7", icon: "UserCheck", title: "Surat Mutasi Orang Tua (Opsional)", description: "Surat keputusan (SK) mutasi perpindahan tugas orang tua asli harus di-scan secara jelas." }
   ];
 

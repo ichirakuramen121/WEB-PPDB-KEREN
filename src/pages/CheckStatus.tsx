@@ -6,7 +6,53 @@ import { checkStatus } from '../services/api';
 import { cn } from '../lib/utils';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import Swal from 'sweetalert2';
 import { useSettings } from '../context/SettingsContext';
+
+const ensureSafePdfImage = (src: string): Promise<string> => {
+  return new Promise((resolve) => {
+    if (!src) {
+      resolve('');
+      return;
+    }
+    // If it's already a safe base64 data URI of png or jpeg (not webp), return it
+    if (src.startsWith('data:image/png') || src.startsWith('data:image/jpeg') || src.startsWith('data:image/jpg')) {
+      resolve(src);
+      return;
+    }
+
+    const img = new Image();
+    if (src.startsWith('http') || src.startsWith('//')) {
+      img.crossOrigin = 'anonymous';
+    }
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(src);
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        
+        // Use PNG if it's a transparent signature/stamp or explicitly PNG
+        const isPng = src.includes('image/png') || src.endsWith('.png') || src.includes('stempel') || src.includes('tandaTangan') || src.includes('tanda_tangan');
+        const format = isPng ? 'image/png' : 'image/jpeg';
+        
+        resolve(canvas.toDataURL(format, 0.95));
+      } catch (err) {
+        console.error("Failed to convert image via canvas", err);
+        resolve(src);
+      }
+    };
+    img.onerror = () => {
+      resolve(src);
+    };
+    img.src = src;
+  });
+};
 
 export default function CheckStatus() {
   const { settings } = useSettings();
@@ -42,9 +88,47 @@ export default function CheckStatus() {
     }
   };
 
-  const printBuktiLulus = (data: any) => {
+  const printBuktiLulus = async (data: any) => {
     if (!data) return;
     
+    let swalInstance: any = null;
+    try {
+      swalInstance = Swal.fire({
+        title: 'Menyiapkan Bukti Kelulusan...',
+        text: 'Sedang memproses gambar kop surat, stempel, dan tanda tangan.',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+    } catch (err) {
+      console.warn("Swal loading not triggered", err);
+    }
+
+    let safeKop = '';
+    let safeStempel = '';
+    let safeTtd = '';
+
+    try {
+      if (settings?.kopSurat) {
+        safeKop = await ensureSafePdfImage(settings.kopSurat);
+      }
+      if (settings?.stempelSekolah) {
+        safeStempel = await ensureSafePdfImage(settings.stempelSekolah);
+      }
+      if (settings?.tandaTanganKepalaSekolah) {
+        safeTtd = await ensureSafePdfImage(settings.tandaTanganKepalaSekolah);
+      }
+    } catch (e) {
+      console.error("Error preloading images for PDF", e);
+    } finally {
+      try {
+        if (swalInstance) {
+          Swal.close();
+        }
+      } catch (e) {}
+    }
+
     const doc = new jsPDF();
     let currentY = 20;
     
@@ -52,9 +136,10 @@ export default function CheckStatus() {
     const tahunAjaran = rawTahun.includes('/') ? rawTahun : `${rawTahun}/${parseInt(rawTahun, 10) + 1}`;
     
     // Header (Kop Surat)
-    if (settings?.kopSurat) {
+    if (safeKop) {
       try {
-        doc.addImage(settings.kopSurat, 'JPEG', 20, 10, 170, 30);
+        const kopFormat = safeKop.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(safeKop, kopFormat, 20, 10, 170, 30);
         currentY = 45;
         doc.line(20, currentY, 190, currentY);
         currentY += 10;
@@ -146,7 +231,7 @@ export default function CheckStatus() {
     doc.text(splitReq, 25, currentY);
     
     currentY += splitReq.length * 6 + 20;
-
+ 
     // Signature Area
     const today = new Date();
     const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
@@ -156,17 +241,19 @@ export default function CheckStatus() {
     doc.text(`${tempat}, ${tanggal}`, 140, currentY);
     doc.text('Kepala Sekolah', 140, currentY + 6);
     
-    if (settings?.stempelSekolah) {
+    if (safeStempel) {
       try {
-        doc.addImage(settings.stempelSekolah, 'PNG', 120, currentY + 8, 30, 30);
+        const stempelFormat = safeStempel.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(safeStempel, stempelFormat, 120, currentY + 8, 30, 30);
       } catch (e) {
         console.error("Error adding stempel", e);
       }
     }
     
-    if (settings?.tandaTanganKepalaSekolah) {
+    if (safeTtd) {
       try {
-        doc.addImage(settings.tandaTanganKepalaSekolah, 'PNG', 140, currentY + 10, 40, 20);
+        const ttdFormat = safeTtd.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(safeTtd, ttdFormat, 140, currentY + 10, 40, 20);
       } catch (e) {
         console.error("Error adding tanda tangan", e);
       }
