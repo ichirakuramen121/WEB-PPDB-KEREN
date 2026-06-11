@@ -109,11 +109,38 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (settings && !localSettings) {
-      const enrichedFields = (settings.formFields || []).map(field => ({
-        ...field,
-        _tempKey: field._tempKey || field.id || Math.random().toString(),
-        _rawOptions: field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')
-      }));
+      const enrichedFields = (settings.formFields || []).map((field, idx) => {
+        let session = field.session;
+        if (session === undefined || session === null) {
+          if (field.type === 'file') {
+            session = 4;
+          } else {
+            const idLower = String(field.id || '').toLowerCase();
+            const labelLower = String(field.label || '').toLowerCase();
+            if (idLower.includes('wali') || labelLower.includes('wali')) {
+              session = 3;
+            } else if (
+              idLower.includes('orang tua') || labelLower.includes('orang tua') ||
+              idLower.includes('ortu') || labelLower.includes('ortu') ||
+              idLower.includes('bapak') || labelLower.includes('bapak') ||
+              idLower.includes('ibu') || labelLower.includes('ibu') ||
+              idLower.includes('hp') || labelLower.includes('hp') ||
+              idLower.includes('telepon') || labelLower.includes('telepon') ||
+              idLower.includes('whatsapp') || labelLower.includes('whatsapp')
+            ) {
+              session = 2;
+            } else {
+              session = 1;
+            }
+          }
+        }
+        return {
+          ...field,
+          session: Number(session),
+          _tempKey: field._tempKey || `stable_key_${idx}_${Math.random().toString(36).substr(2, 9)}`,
+          _rawOptions: field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')
+        };
+      });
       setLocalSettings({
         ...settings,
         formFields: enrichedFields
@@ -160,7 +187,7 @@ export default function AdminDashboard() {
     });
   };
 
-  const moveField = (fieldId: string, sessionId: number, direction: 'up' | 'down') => {
+  const moveField = (fieldTempKey: string, sessionId: number, direction: 'up' | 'down') => {
     if (!localSettings?.formFields) return;
     const fields = [...localSettings.formFields];
     
@@ -191,7 +218,7 @@ export default function AdminDashboard() {
       return sessionId === 1;
     });
 
-    const indexInSession = stepFields.findIndex(f => f.id === fieldId);
+    const indexInSession = stepFields.findIndex(f => f._tempKey === fieldTempKey);
     if (indexInSession === -1) return;
 
     if (direction === 'up') {
@@ -199,23 +226,27 @@ export default function AdminDashboard() {
       const currentField = stepFields[indexInSession];
       const targetField = stepFields[indexInSession - 1];
       
-      const currentIndexInMain = fields.findIndex(f => f.id === currentField.id);
-      const targetIndexInMain = fields.findIndex(f => f.id === targetField.id);
+      const currentIndexInMain = fields.findIndex(f => f._tempKey === currentField._tempKey);
+      const targetIndexInMain = fields.findIndex(f => f._tempKey === targetField._tempKey);
       
-      // Swap
-      fields[currentIndexInMain] = targetField;
-      fields[targetIndexInMain] = currentField;
+      if (currentIndexInMain !== -1 && targetIndexInMain !== -1) {
+        // Swap
+        fields[currentIndexInMain] = targetField;
+        fields[targetIndexInMain] = currentField;
+      }
     } else {
       if (indexInSession === stepFields.length - 1) return; // Already last
       const currentField = stepFields[indexInSession];
       const targetField = stepFields[indexInSession + 1];
       
-      const currentIndexInMain = fields.findIndex(f => f.id === currentField.id);
-      const targetIndexInMain = fields.findIndex(f => f.id === targetField.id);
+      const currentIndexInMain = fields.findIndex(f => f._tempKey === currentField._tempKey);
+      const targetIndexInMain = fields.findIndex(f => f._tempKey === targetField._tempKey);
       
-      // Swap
-      fields[currentIndexInMain] = targetField;
-      fields[targetIndexInMain] = currentField;
+      if (currentIndexInMain !== -1 && targetIndexInMain !== -1) {
+        // Swap
+        fields[currentIndexInMain] = targetField;
+        fields[targetIndexInMain] = currentField;
+      }
     }
 
     setLocalSettings({ ...localSettings, formFields: fields });
@@ -295,16 +326,7 @@ export default function AdminDashboard() {
       };
 
       await updateSettings(settingsToSave);
-      const enrichedFields = (settingsToSave.formFields || []).map(field => ({
-        ...field,
-        _tempKey: field._tempKey || field.id || Math.random().toString(),
-        _rawOptions: field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')
-      }));
-      const fullyUpdated = {
-        ...settingsToSave,
-        formFields: enrichedFields
-      };
-      setLocalSettings(fullyUpdated);
+      setLocalSettings({ ...localSettings });
       await refreshSettings(settingsToSave);
       Swal.fire({
         icon: 'success',
@@ -1714,14 +1736,14 @@ export default function AdminDashboard() {
                             <h4 className="font-bold text-md text-blue-600">{step.name}</h4>
                             <button
                               onClick={() => {
-                                const tempId = `Field-${Date.now()}`;
+                                const tempId = `field_${Date.now()}`;
                                 const newFields = [...(localSettings?.formFields || []), { 
                                   id: tempId, 
                                   label: 'Field Baru', 
                                   type: (step.id === 4 ? 'file' : 'text') as any, 
                                   required: false, 
                                   session: step.id as any,
-                                  _tempKey: Math.random().toString(),
+                                  _tempKey: `stable_key_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                                   _rawOptions: ''
                                 }];
                                 setLocalSettings({...localSettings!, formFields: newFields});
@@ -1737,13 +1759,13 @@ export default function AdminDashboard() {
                           ) : (
                             <div className="space-y-4">
                               {stepFields.map((field) => {
-                                const globalIndex = (localSettings?.formFields || []).findIndex(f => f.id === field.id);
+                                const globalIndex = (localSettings?.formFields || []).findIndex(f => f._tempKey === field._tempKey);
                                 if (globalIndex === -1) return null;
                                 return (
-                                  <div key={field._tempKey || field.id} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
+                                  <div key={field._tempKey} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
                                     <div className="md:col-span-1 flex gap-1 justify-start pb-1">
                                       <button
-                                        onClick={() => moveField(field.id, step.id, 'up')}
+                                        onClick={() => moveField(field._tempKey, step.id, 'up')}
                                         disabled={stepFields.indexOf(field) === 0}
                                         className="p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
                                         title="Pindahkan Ke Atas"
@@ -1751,7 +1773,7 @@ export default function AdminDashboard() {
                                         <ArrowUp size={16} />
                                       </button>
                                       <button
-                                        onClick={() => moveField(field.id, step.id, 'down')}
+                                        onClick={() => moveField(field._tempKey, step.id, 'down')}
                                         disabled={stepFields.indexOf(field) === stepFields.length - 1}
                                         className="p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
                                         title="Pindahkan Ke Bawah"
@@ -1767,9 +1789,6 @@ export default function AdminDashboard() {
                                         onChange={e => {
                                           const newFields = [...(localSettings?.formFields || [])];
                                           newFields[globalIndex] = { ...newFields[globalIndex], id: e.target.value };
-                                          if (!newFields[globalIndex]._tempKey) {
-                                            newFields[globalIndex]._tempKey = field.id || Math.random().toString();
-                                          }
                                           setLocalSettings({...localSettings!, formFields: newFields});
                                         }}
                                         className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
@@ -1842,7 +1861,7 @@ export default function AdminDashboard() {
                                     <div className="md:col-span-1 flex justify-end pb-1">
                                       <button
                                         onClick={() => {
-                                          const newFields = (localSettings?.formFields || []).filter(f => f.id !== field.id);
+                                          const newFields = (localSettings?.formFields || []).filter(f => f._tempKey !== field._tempKey);
                                           setLocalSettings({...localSettings!, formFields: newFields});
                                         }}
                                         className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors dark:hover:bg-red-900/20 cursor-pointer"
