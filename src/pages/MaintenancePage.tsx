@@ -28,7 +28,7 @@ export default function MaintenancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#E5F1FC] text-[#2C3E50] flex flex-col justify-between font-sans antialiased relative">
+    <div className="min-h-screen bg-[#D3ECFD] text-[#2C3E50] flex flex-col justify-between font-sans antialiased relative">
       
       {/* Spacer or very thin elegant top strip */}
       <div></div>
@@ -62,7 +62,7 @@ export default function MaintenancePage() {
             onClick={() => window.location.reload()}
             className="inline-flex items-center gap-2 bg-[#255C8F] hover:bg-[#1C4770] text-white font-bold px-6 py-2.5 rounded-full text-xs tracking-wider transition-all shadow-md active:scale-95 uppercase"
           >
-            <RefreshCw size={13} className="animate-spin" style={{ animationDuration: '4s' }} /> Periksa Status Sistem
+            <RefreshCw size={13} className="animate-spin" style={{ animationDuration: '4s' }} /> Muat Ulang
           </button>
         </div>
 
