@@ -229,7 +229,10 @@ export default function AdminDashboard() {
       return sessionId === 1;
     });
 
-    const indexInSession = stepFields.findIndex(f => f._tempKey === fieldTempKey);
+    const indexInSession = stepFields.findIndex(f => {
+      const fKey = f._tempKey || f.id || f.label;
+      return fKey === fieldTempKey;
+    });
     if (indexInSession === -1) return;
 
     if (direction === 'up') {
@@ -237,8 +240,16 @@ export default function AdminDashboard() {
       const currentField = stepFields[indexInSession];
       const targetField = stepFields[indexInSession - 1];
       
-      const currentIndexInMain = fields.findIndex(f => f._tempKey === currentField._tempKey);
-      const targetIndexInMain = fields.findIndex(f => f._tempKey === targetField._tempKey);
+      const currentIndexInMain = fields.findIndex(f => {
+        const fKey = f._tempKey || f.id || f.label;
+        const curKey = currentField._tempKey || currentField.id || currentField.label;
+        return fKey === curKey;
+      });
+      const targetIndexInMain = fields.findIndex(f => {
+        const fKey = f._tempKey || f.id || f.label;
+        const tarKey = targetField._tempKey || targetField.id || targetField.label;
+        return fKey === tarKey;
+      });
       
       if (currentIndexInMain !== -1 && targetIndexInMain !== -1) {
         // Swap
@@ -250,8 +261,16 @@ export default function AdminDashboard() {
       const currentField = stepFields[indexInSession];
       const targetField = stepFields[indexInSession + 1];
       
-      const currentIndexInMain = fields.findIndex(f => f._tempKey === currentField._tempKey);
-      const targetIndexInMain = fields.findIndex(f => f._tempKey === targetField._tempKey);
+      const currentIndexInMain = fields.findIndex(f => {
+        const fKey = f._tempKey || f.id || f.label;
+        const curKey = currentField._tempKey || currentField.id || currentField.label;
+        return fKey === curKey;
+      });
+      const targetIndexInMain = fields.findIndex(f => {
+        const fKey = f._tempKey || f.id || f.label;
+        const tarKey = targetField._tempKey || targetField.id || targetField.label;
+        return fKey === tarKey;
+      });
       
       if (currentIndexInMain !== -1 && targetIndexInMain !== -1) {
         // Swap
@@ -1096,10 +1115,10 @@ export default function AdminDashboard() {
                                 const parsed = JSON.parse(trimmed);
                                 if (Array.isArray(parsed)) {
                                   return parsed.map((item: any, index) => {
-                                    if (typeof item === 'object' && item !== null && item.url) {
+                                    if (typeof item === 'object' && item !== null && typeof item.url === 'string') {
                                       return {
                                         label: item.label || `Link Dokumen ${index + 1}`,
-                                        url: item.url.trim()
+                                        url: item.url
                                       };
                                     } else if (typeof item === 'string') {
                                       return {
@@ -1770,13 +1789,17 @@ export default function AdminDashboard() {
                           ) : (
                             <div className="space-y-4">
                               {stepFields.map((field) => {
-                                const globalIndex = (localSettings?.formFields || []).findIndex(f => f._tempKey === field._tempKey);
+                                const currentFieldKey = field._tempKey || field.id || field.label;
+                                const globalIndex = (localSettings?.formFields || []).findIndex(f => {
+                                  const fKey = f._tempKey || f.id || f.label;
+                                  return fKey === currentFieldKey;
+                                });
                                 if (globalIndex === -1) return null;
                                 return (
-                                  <div key={field._tempKey} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
+                                  <div key={currentFieldKey} className={cn("p-4 rounded-lg border grid grid-cols-1 md:grid-cols-12 gap-4 items-end", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
                                     <div className="md:col-span-1 flex gap-1 justify-start pb-1">
                                       <button
-                                        onClick={() => moveField(field._tempKey, step.id, 'up')}
+                                        onClick={() => moveField(currentFieldKey, step.id, 'up')}
                                         disabled={stepFields.indexOf(field) === 0}
                                         className="p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
                                         title="Pindahkan Ke Atas"
@@ -1784,7 +1807,7 @@ export default function AdminDashboard() {
                                         <ArrowUp size={16} />
                                       </button>
                                       <button
-                                        onClick={() => moveField(field._tempKey, step.id, 'down')}
+                                        onClick={() => moveField(currentFieldKey, step.id, 'down')}
                                         disabled={stepFields.indexOf(field) === stepFields.length - 1}
                                         className="p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
                                         title="Pindahkan Ke Bawah"
@@ -1812,7 +1835,16 @@ export default function AdminDashboard() {
                                         value={field.label}
                                         onChange={e => {
                                           const newFields = [...(localSettings?.formFields || [])];
-                                          newFields[globalIndex] = { ...newFields[globalIndex], label: e.target.value };
+                                          const newLabel = e.target.value;
+                                          const slugId = newLabel.toLowerCase()
+                                            .replace(/[^a-z0-9\s-]/g, '')
+                                            .replace(/\s+/g, '_')
+                                            .trim();
+                                          newFields[globalIndex] = { 
+                                            ...newFields[globalIndex], 
+                                            label: newLabel,
+                                            id: slugId || newFields[globalIndex].id
+                                          };
                                           setLocalSettings({...localSettings!, formFields: newFields});
                                         }}
                                         className={cn("w-full px-3 py-2 text-sm border rounded-md", isDarkMode ? "bg-slate-800 border-slate-600 text-white" : "bg-white border-slate-300")}
@@ -1872,7 +1904,10 @@ export default function AdminDashboard() {
                                     <div className="md:col-span-1 flex justify-end pb-1">
                                       <button
                                         onClick={() => {
-                                          const newFields = (localSettings?.formFields || []).filter(f => f._tempKey !== field._tempKey);
+                                          const newFields = (localSettings?.formFields || []).filter(f => {
+                                            const fKey = f._tempKey || f.id || f.label;
+                                            return fKey !== currentFieldKey;
+                                          });
                                           setLocalSettings({...localSettings!, formFields: newFields});
                                         }}
                                         className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors dark:hover:bg-red-900/20 cursor-pointer"
