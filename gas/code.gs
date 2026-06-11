@@ -38,20 +38,59 @@ const DEFAULT_SETTINGS = {
 };
 
 function setup() {
+  ensureSheetsExist();
+}
+
+function ensureSheetsExist() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // Setup Data Pendaftar Sheet
+  // 1. Setup Data Pendaftar Sheet
   let sheet = ss.getSheetByName(SHEET_NAME);
+  const defaultHeaders = [
+    "Timestamp", "No Pendaftaran", "Status", "Alasan Penolakan", "Jarak ke Sekolah (km)", "Koordinat Lokasi"
+  ];
+  
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
-    const headers = ["Timestamp", "No Pendaftaran", "Status"];
-    DEFAULT_FORM_FIELDS.forEach(f => headers.push(f.id));
+    const headers = [...defaultHeaders];
+    DEFAULT_FORM_FIELDS.forEach(f => {
+      if (headers.indexOf(f.label) === -1) {
+        headers.push(f.label);
+      }
+    });
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e0e0e0");
     sheet.setFrozenRows(1);
+  } else {
+    // Audit and auto-add missing columns to avoid any errors!
+    let cols = Math.max(sheet.getLastColumn(), 1);
+    let headers = sheet.getRange(1, 1, 1, cols).getValues()[0];
+    let updatedHeaders = [...headers];
+    let changes = false;
+    
+    // Core columns that MUST exist
+    defaultHeaders.forEach(h => {
+      if (updatedHeaders.indexOf(h) === -1) {
+        updatedHeaders.push(h);
+        changes = true;
+      }
+    });
+    
+    // Default form field labels
+    DEFAULT_FORM_FIELDS.forEach(f => {
+      if (updatedHeaders.indexOf(f.label) === -1) {
+        updatedHeaders.push(f.label);
+        changes = true;
+      }
+    });
+    
+    if (changes) {
+      sheet.getRange(1, 1, 1, updatedHeaders.length).setValues([updatedHeaders]);
+      sheet.getRange(1, 1, 1, updatedHeaders.length).setFontWeight("bold").setBackground("#e0e0e0");
+    }
   }
 
-  // Setup Admin Sheet
+  // 2. Setup Admin Sheet
   let adminSheet = ss.getSheetByName(ADMIN_SHEET_NAME);
   if (!adminSheet) {
     adminSheet = ss.insertSheet(ADMIN_SHEET_NAME);
@@ -60,7 +99,7 @@ function setup() {
     adminSheet.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#e0e0e0");
   }
 
-  // Setup Settings Sheet
+  // 3. Setup Settings Sheet
   let settingsSheet = ss.getSheetByName(SETTINGS_SHEET_NAME);
   if (!settingsSheet) {
     settingsSheet = ss.insertSheet(SETTINGS_SHEET_NAME);
@@ -71,7 +110,7 @@ function setup() {
     settingsSheet.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#e0e0e0");
   }
 
-  // Setup Drive Folder
+  // 4. Setup Drive Folder
   const folders = DriveApp.getFoldersByName(FOLDER_NAME);
   if (!folders.hasNext()) {
     DriveApp.createFolder(FOLDER_NAME);
@@ -80,6 +119,7 @@ function setup() {
 
 function doPost(e) {
   try {
+    ensureSheetsExist();
     const data = JSON.parse(e.postData.contents);
     
     if (data.action === "login") return handleLogin(data.username, data.password);
@@ -99,6 +139,7 @@ function doPost(e) {
 
 function doGet(e) {
   try {
+    ensureSheetsExist();
     if (e.parameter.action === "getSettings") {
       return handleGetSettings();
     }
@@ -415,17 +456,25 @@ function handleCheckStatus(noPendaftaran) {
 }
 
 function updateStatus(noPendaftaran, newStatus, alasan) {
+  ensureSheetsExist();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAME);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   const noRegIdx = headers.indexOf("No Pendaftaran");
   const statusIdx = headers.indexOf("Status");
-  const alasanIdx = headers.indexOf("Alasan Penolakan");
+  let alasanIdx = headers.indexOf("Alasan Penolakan");
+  
+  if (alasanIdx === -1 && headers.length > 0) {
+    sheet.getRange(1, headers.length + 1).setValue("Alasan Penolakan");
+    alasanIdx = headers.length;
+  }
   
   for (let i = 1; i < data.length; i++) {
     if (data[i][noRegIdx] === noPendaftaran) {
-      sheet.getRange(i + 1, statusIdx + 1).setValue(newStatus);
+      if (statusIdx !== -1) {
+        sheet.getRange(i + 1, statusIdx + 1).setValue(newStatus);
+      }
       if (alasanIdx !== -1) {
         sheet.getRange(i + 1, alasanIdx + 1).setValue(alasan || "");
       }
