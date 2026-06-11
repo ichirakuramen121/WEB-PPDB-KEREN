@@ -336,16 +336,23 @@ export default function CheckStatus() {
     doc.save(`Dokumen_Sekolah_DaftarUlang_${data.noPendaftaran}.pdf`);
   };
 
+  const safeFormatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
   const getStatusDisplay = (status: string, data?: any) => {
     let displayStatus = status;
     if (settings?.tanggalPengumuman) {
       const pengumumanDate = new Date(settings.tanggalPengumuman);
-      const now = new Date();
-      // Reset hours to compare just dates, or compare exact time. Let's compare exact time or start of day.
-      // Usually it's start of day.
-      pengumumanDate.setHours(0, 0, 0, 0);
-      if (now < pengumumanDate) {
-        displayStatus = 'Proses';
+      if (!isNaN(pengumumanDate.getTime())) {
+        const now = new Date();
+        pengumumanDate.setHours(0, 0, 0, 0);
+        if (now < pengumumanDate) {
+          displayStatus = 'Proses';
+        }
       }
     }
 
@@ -368,7 +375,7 @@ export default function CheckStatus() {
               <h4 className="font-bold text-green-800 mb-2 text-sm uppercase">Persyaratan Daftar Ulang (Wajib Dibawa):</h4>
               {settings?.tanggalDaftarUlang && (
                 <p className="text-sm text-green-700 mb-3 font-semibold">
-                  Jadwal Daftar Ulang: {new Date(settings.tanggalDaftarUlang).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  Jadwal Daftar Ulang: {safeFormatDate(settings.tanggalDaftarUlang)}
                 </p>
               )}
               <div className="text-sm text-slate-700 whitespace-pre-line space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-100">
@@ -445,7 +452,8 @@ export default function CheckStatus() {
           </div>
         );
       default:
-        const isBeforePengumuman = settings?.tanggalPengumuman && new Date() < new Date(new Date(settings.tanggalPengumuman).setHours(0, 0, 0, 0));
+        const parsePengumuman = settings?.tanggalPengumuman ? new Date(settings.tanggalPengumuman) : null;
+        const isBeforePengumuman = parsePengumuman && !isNaN(parsePengumuman.getTime()) && new Date() < new Date(parsePengumuman.setHours(0, 0, 0, 0));
         return (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
             <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
@@ -454,7 +462,7 @@ export default function CheckStatus() {
             <h3 className="text-2xl font-bold text-amber-800 mb-2">Data Sedang Diproses</h3>
             <p className="text-amber-700">
               {isBeforePengumuman 
-                ? `Pengumuman kelulusan akan dibuka pada tanggal ${new Date(settings.tanggalPengumuman!).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}.` 
+                ? `Pengumuman kelulusan akan dibuka pada tanggal ${safeFormatDate(settings.tanggalPengumuman)}.` 
                 : 'Berkas Anda sedang dalam tahap verifikasi panitia.'}
             </p>
           </div>

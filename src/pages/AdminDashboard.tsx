@@ -108,7 +108,7 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    if (settings) {
+    if (settings && !localSettings) {
       const enrichedFields = (settings.formFields || []).map(field => ({
         ...field,
         _tempKey: field._tempKey || field.id || Math.random().toString(),
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
         formFields: enrichedFields
       });
     }
-  }, [settings]);
+  }, [settings, localSettings]);
 
   useEffect(() => {
     const isAdmin = sessionStorage.getItem('isAdmin');
@@ -295,6 +295,7 @@ export default function AdminDashboard() {
       };
 
       await updateSettings(settingsToSave);
+      setLocalSettings(null);
       await refreshSettings();
       Swal.fire({
         icon: 'success',
@@ -458,6 +459,29 @@ export default function AdminDashboard() {
             <p className={cn("mt-1", isDarkMode ? "text-slate-400" : "text-slate-500")}>Kelola data pendaftaran SPMB {settings?.namaSekolah || 'Sekolah'}</p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                localStorage.removeItem('has_registered');
+                localStorage.removeItem('registered_no');
+                document.cookie = "has_registered=; max-age=-99999999; path=/";
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Perangkat Direset',
+                  text: 'Status pendaftaran perangkat Anda berhasil direset! Sekarang Anda dapat menguji coba kembali pengisian formulir.',
+                  timer: 2500,
+                  showConfirmButton: false
+                });
+              }}
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm border",
+                isDarkMode 
+                  ? "bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 hover:text-white" 
+                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              )}
+              title="Reset status pendaftaran pada browser Anda agar bisa mencoba mengisi formulir kembali"
+            >
+              <RefreshCw size={15} /> Reset Status Uji Coba Form
+            </button>
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={cn("p-2 rounded-full transition-colors", isDarkMode ? "bg-slate-800 text-yellow-400 hover:bg-slate-700" : "bg-white text-slate-600 hover:bg-slate-100 shadow-sm border border-slate-200")}
@@ -1217,8 +1241,11 @@ export default function AdminDashboard() {
                                 >
                                   <option value="FileDigit">FileDigit (KK)</option>
                                   <option value="FileBadge">FileBadge (Akta)</option>
-                                  <option value="FileImage">FileImage (Foto)</option>
-                                  <option value="FileText">FileText (Ijazah/Umum)</option>
+                                  <option value="Home">Home (Domisili)</option>
+                                  <option value="School">School (Ijazah)</option>
+                                  <option value="Award">Award (Prestasi)</option>
+                                  <option value="UserCheck">UserCheck (Mutasi)</option>
+                                  <option value="FileText">FileText (Umum)</option>
                                 </select>
                               </div>
                               <div className="md:col-span-3">

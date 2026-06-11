@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
@@ -9,17 +9,24 @@ export default function Footer() {
   const [clickCount, setClickCount] = useState(0);
 
   const handleSecretClick = () => {
-    setClickCount((prev) => {
-      const next = prev + 1;
-      if (next >= 3) {
-        navigate('/admin/login');
-        return 0;
-      }
-      // Reset clicks after 2 seconds
-      setTimeout(() => setClickCount(0), 2000);
-      return next;
-    });
+    const nextCount = clickCount + 1;
+    if (nextCount >= 3) {
+      setClickCount(0);
+      navigate('/admin/login');
+    } else {
+      setClickCount(nextCount);
+    }
   };
+
+  useEffect(() => {
+    if (clickCount > 0) {
+      const timer = setTimeout(() => {
+        setClickCount(0);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [clickCount]);
+
 
   return (
     <footer className="bg-slate-900 text-slate-300 py-12 border-t border-slate-800">

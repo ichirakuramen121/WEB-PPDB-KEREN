@@ -508,7 +508,7 @@ export default function RegistrationForm() {
           )}
           <div className="flex flex-col gap-3">
             <Link
-              to="/cek-status"
+              to="/cek-kelulusan"
               className="inline-flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-xl font-bold transition-all text-sm shadow-md hover:shadow-lg"
             >
               Cek Status Kelulusan
@@ -520,26 +520,6 @@ export default function RegistrationForm() {
               Kembali ke Beranda
             </Link>
           </div>
-          
-          <button
-            onClick={() => {
-              localStorage.removeItem('has_registered');
-              localStorage.removeItem('registered_no');
-              document.cookie = "has_registered=; max-age=-99999999; path=/";
-              setDeviceRegistered(false);
-              setRegisteredNo('');
-              Swal.fire({
-                icon: 'success',
-                title: 'Perangkat Direset',
-                text: 'Status pendaftaran perangkat berhasil direset. Anda dapat mengisi formulir kembali.',
-                timer: 1500,
-                showConfirmButton: false
-              });
-            }}
-            className="mt-8 text-xs text-slate-400 hover:text-slate-600 underline font-semibold cursor-pointer transition-colors"
-          >
-            Reset Status Perangkat (Uji Coba Pengisian Kembali)
-          </button>
         </div>
       </div>
     );
@@ -832,7 +812,7 @@ export default function RegistrationForm() {
                             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                             Estimasi Jarak dari Rumah ke Sekolah:
                           </div>
-                          <span className="font-extrabold text-emerald-700 bg-emerald-100 px-4 py-1.5 rounded-full text-sm tracking-tight">{distance.toFixed(2)} km (Memenuhi Jalur Zonasi)</span>
+                          <span className="font-extrabold text-emerald-700 bg-emerald-100 px-4 py-1.5 rounded-full text-sm tracking-tight">{distance.toFixed(2)} km</span>
                         </div>
                       ) : (
                         validationErrors['MAP_LOCATION'] && (
