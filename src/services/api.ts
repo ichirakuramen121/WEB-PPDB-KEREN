@@ -57,6 +57,7 @@ export interface AppSettings {
   panduanDokumen?: PanduanDokumen[];
   panduanAlur?: string[];
   isMaintenance?: boolean;
+  maintenanceTitle?: string;
   maintenanceMessage?: string;
   googleDriveDaftarUlang?: string;
   isRapatAktif?: boolean;
@@ -84,7 +85,8 @@ const getInitialMockSettings = (): AppSettings => {
   const defaultSettings: AppSettings = {
     namaSekolah: "SDN Citapen",
     isMaintenance: false,
-    maintenanceMessage: "Maaf, server sedang mengalami overload penonton/pendaftar yang sangat tinggi. Sistem SPMB SDN Citapen sementara sedang mengalami maintenance untuk optimalisasi kuota server agar tidak down. Silakan coba kembali beberapa menit lagi secara berkala.",
+    maintenanceTitle: "SITE UNDER MAINTENANCE",
+    maintenanceMessage: "Kami memohon maaf yang sebesar-besarnya atas ketidaknyamanan ini. Saat ini server sistem pendaftaran online sedang mengalami pemeliharaan terjadwal dan peningkatan performa, tetapi kami akan segera kembali. Terima kasih atas kesabaran Anda.",
     alamat: "Jl. Otto Iskandardinata No.12, Citapen, Kec. Tawang, Kota Tasikmalaya, Jawa Barat 46115",
     telepon: "(0265) 331422",
     email: "info@sdncitapen.sch.id",

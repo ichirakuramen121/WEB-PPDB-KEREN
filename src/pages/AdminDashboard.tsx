@@ -295,17 +295,17 @@ export default function AdminDashboard() {
       };
 
       await updateSettings(settingsToSave);
-      const updatedData = await getSettings();
-      const enrichedFields = (updatedData.formFields || []).map(field => ({
+      const enrichedFields = (settingsToSave.formFields || []).map(field => ({
         ...field,
         _tempKey: field._tempKey || field.id || Math.random().toString(),
         _rawOptions: field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')
       }));
-      setLocalSettings({
-        ...updatedData,
+      const fullyUpdated = {
+        ...settingsToSave,
         formFields: enrichedFields
-      });
-      await refreshSettings();
+      };
+      setLocalSettings(fullyUpdated);
+      await refreshSettings(settingsToSave);
       Swal.fire({
         icon: 'success',
         title: 'Berhasil',
@@ -1000,16 +1000,29 @@ export default function AdminDashboard() {
                       </div>
 
                       {localSettings.isMaintenance && (
-                        <div className="mt-4 space-y-2">
-                          <label className={cn("block text-sm font-medium", isDarkMode ? "text-slate-300" : "text-slate-700")}>Pesan Kustom Layar Overload / Maintenance</label>
-                          <textarea
-                            value={localSettings.maintenanceMessage || ''}
-                            onChange={e => setLocalSettings({...localSettings, maintenanceMessage: e.target.value})}
-                            rows={3}
-                            placeholder="Tuliskan pesan penjelasan mengapa sistem overload atau sedang dalam pemeliharaan..."
-                            className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
-                          />
-                          <p className="text-xs text-slate-500">Jika dikosongkan, halaman akan tetap menampilkan pesan bawaan server overload berkapasitas tinggi.</p>
+                        <div className="mt-4 space-y-4">
+                          <div className="space-y-1">
+                            <label className={cn("block text-sm font-medium", isDarkMode ? "text-slate-300" : "text-slate-700")}>Judul Layar Maintenance</label>
+                            <input
+                              type="text"
+                              value={localSettings.maintenanceTitle || ''}
+                              onChange={e => setLocalSettings({...localSettings, maintenanceTitle: e.target.value})}
+                              placeholder="Contoh: SITE UNDER MAINTENANCE"
+                              className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                            />
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className={cn("block text-sm font-medium", isDarkMode ? "text-slate-300" : "text-slate-700")}>Pesan Kustom Layar Overload / Maintenance</label>
+                            <textarea
+                              value={localSettings.maintenanceMessage || ''}
+                              onChange={e => setLocalSettings({...localSettings, maintenanceMessage: e.target.value})}
+                              rows={3}
+                              placeholder="Tuliskan pesan penjelasan mengapa sistem overload atau sedang dalam pemeliharaan..."
+                              className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
+                            />
+                            <p className="text-xs text-slate-500">Jika dikosongkan, halaman akan menampilkan pesan bawaan pemeliharaan sistem.</p>
+                          </div>
                         </div>
                       )}
                     </div>

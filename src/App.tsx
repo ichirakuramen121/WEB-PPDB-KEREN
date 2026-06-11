@@ -36,8 +36,9 @@ function AppContent() {
   const { settings } = useSettings();
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
+  const isAdminSession = sessionStorage.getItem('isAdmin') === 'true';
 
-  if (settings?.isMaintenance && !isAdminPage) {
+  if (settings?.isMaintenance && !isAdminPage && !isAdminSession) {
     return <MaintenancePage />;
   }
 

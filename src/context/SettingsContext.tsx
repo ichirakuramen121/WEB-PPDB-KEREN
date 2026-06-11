@@ -4,7 +4,7 @@ import { getSettings, AppSettings } from '../services/api';
 interface SettingsContextType {
   settings: AppSettings | null;
   isLoading: boolean;
-  refreshSettings: () => Promise<void>;
+  refreshSettings: (directSettings?: AppSettings) => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -16,7 +16,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   });
   const [isLoading, setIsLoading] = useState(!settings);
 
-  const fetchSettings = async () => {
+  const fetchSettings = async (directSettings?: AppSettings) => {
+    if (directSettings) {
+      setSettings(directSettings);
+      localStorage.setItem('app_settings_cache', JSON.stringify(directSettings));
+      return;
+    }
+
     // Only set loading if we don't have cached data
     if (!settings) {
       setIsLoading(true);
