@@ -81,6 +81,41 @@ const calculateAge = (dateString: string, cutoffDateString?: string) => {
   return `${years} Tahun ${months} Bulan ${days} Hari`;
 };
 
+const enrichFields = (fields: any[]): any[] => {
+  return (fields || []).map((field, idx) => {
+    let session = field.session;
+    if (session === undefined || session === null) {
+      if (field.type === 'file') {
+        session = 4;
+      } else {
+        const idLower = String(field.id || '').toLowerCase();
+        const labelLower = String(field.label || '').toLowerCase();
+        if (idLower.includes('wali') || labelLower.includes('wali')) {
+          session = 3;
+        } else if (
+          idLower.includes('orang tua') || labelLower.includes('orang tua') ||
+          idLower.includes('ortu') || labelLower.includes('ortu') ||
+          idLower.includes('bapak') || labelLower.includes('bapak') ||
+          idLower.includes('ibu') || labelLower.includes('ibu') ||
+          idLower.includes('hp') || labelLower.includes('hp') ||
+          idLower.includes('telepon') || labelLower.includes('telepon') ||
+          idLower.includes('whatsapp') || labelLower.includes('whatsapp')
+        ) {
+          session = 2;
+        } else {
+          session = 1;
+        }
+      }
+    }
+    return {
+      ...field,
+      session: Number(session) as 1 | 2 | 3 | 4,
+      _tempKey: field._tempKey || `stable_key_${idx}_${Math.random().toString(36).substr(2, 9)}`,
+      _rawOptions: field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')
+    };
+  });
+};
+
 export default function AdminDashboard() {
   const { settings, refreshSettings } = useSettings();
   const [data, setData] = useState<AdminData[]>([]);
@@ -97,7 +132,15 @@ export default function AdminDashboard() {
 
   // Settings State
   const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [localSettings, setLocalSettings] = useState(settings);
+  const [localSettings, setLocalSettings] = useState<any>(() => {
+    if (settings) {
+      return {
+        ...settings,
+        formFields: enrichFields(settings.formFields)
+      };
+    }
+    return null;
+  });
 
   const getFieldValue = (item: any, fieldId: string) => {
     const field = settings?.formFields?.find(f => f.id === fieldId);
@@ -109,41 +152,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (settings && !localSettings) {
-      const enrichedFields = (settings.formFields || []).map((field, idx) => {
-        let session = field.session;
-        if (session === undefined || session === null) {
-          if (field.type === 'file') {
-            session = 4;
-          } else {
-            const idLower = String(field.id || '').toLowerCase();
-            const labelLower = String(field.label || '').toLowerCase();
-            if (idLower.includes('wali') || labelLower.includes('wali')) {
-              session = 3;
-            } else if (
-              idLower.includes('orang tua') || labelLower.includes('orang tua') ||
-              idLower.includes('ortu') || labelLower.includes('ortu') ||
-              idLower.includes('bapak') || labelLower.includes('bapak') ||
-              idLower.includes('ibu') || labelLower.includes('ibu') ||
-              idLower.includes('hp') || labelLower.includes('hp') ||
-              idLower.includes('telepon') || labelLower.includes('telepon') ||
-              idLower.includes('whatsapp') || labelLower.includes('whatsapp')
-            ) {
-              session = 2;
-            } else {
-              session = 1;
-            }
-          }
-        }
-        return {
-          ...field,
-          session: Number(session),
-          _tempKey: field._tempKey || `stable_key_${idx}_${Math.random().toString(36).substr(2, 9)}`,
-          _rawOptions: field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')
-        };
-      });
       setLocalSettings({
         ...settings,
-        formFields: enrichedFields
+        formFields: enrichFields(settings.formFields)
       });
     }
   }, [settings, localSettings]);
