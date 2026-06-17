@@ -1,7 +1,7 @@
 // Service to interact with Google Apps Script Backend
 
 // To use the real backend, replace this URL with your deployed Google Apps Script Web App URL
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxQGR7Wiq21-e3YB-cXeOSTSdJjNaEoQxjrENboh-WgdjraObCtK6FB4L0GY0myXTa_/exec"; 
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwu7_Pe5mwOiC--FupC6G23axBmVp-SwupjhqtyXxe0VfzfaPDdz1AMlL_4lhwjLkbl/exec"; 
 
 export interface FormField {
   id: string;
@@ -452,10 +452,14 @@ export const submitRegistration = async (data: RegistrationData) => {
 
     let noPendaftaran = "";
     let isUnique = false;
+    let yearFormatted = year;
+    if (!year.includes('/')) {
+       const nextYear = isNaN(Number(year)) ? (new Date().getFullYear() + 1).toString() : (Number(year) + 1).toString();
+       yearFormatted = `${year}/${nextYear}`;
+    }
     while (!isUnique) {
       const code = generateRandomCode(4);
-      const nextYear = isNaN(Number(year)) ? (new Date().getFullYear() + 1).toString() : (Number(year) + 1).toString();
-      noPendaftaran = `SPMB-${year}/${nextYear}-${code}`;
+      noPendaftaran = `SPMB-${yearFormatted}-${code}`;
       isUnique = !mockData.some(d => d['No Pendaftaran'] === noPendaftaran);
     }
 

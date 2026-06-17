@@ -367,11 +367,15 @@ function handleRegistration(data) {
 
   var noPendaftaran = "";
   var isUnique = false;
-  var nextActiveYearVal = Number(activeYear);
-  var nextActiveYearStr = isNaN(nextActiveYearVal) ? (new Date().getFullYear() + 1).toString() : (nextActiveYearVal + 1).toString();
+  var yearFormatted = activeYear;
+  if (activeYear.indexOf('/') === -1) {
+    var nextActiveYearVal = Number(activeYear);
+    var nextActiveYearStr = isNaN(nextActiveYearVal) ? (new Date().getFullYear() + 1).toString() : (nextActiveYearVal + 1).toString();
+    yearFormatted = activeYear + "/" + nextActiveYearStr;
+  }
   while (!isUnique) {
     var code = generateRandomCode(4);
-    noPendaftaran = "SPMB-" + activeYear + "/" + nextActiveYearStr + "-" + code;
+    noPendaftaran = "SPMB-" + yearFormatted + "-" + code;
     isUnique = existingNo.indexOf(noPendaftaran) === -1;
   }
   

@@ -182,10 +182,14 @@ async function startServer() {
 
     let noPendaftaran = "";
     let isUnique = false;
+    let yearFormatted = year;
+    if (!year.includes('/')) {
+      const nextYear = isNaN(Number(year)) ? (new Date().getFullYear() + 1).toString() : (Number(year) + 1).toString();
+      yearFormatted = `${year}/${nextYear}`;
+    }
     while (!isUnique) {
       const code = generateRandomCode(4);
-      const nextYear = isNaN(Number(year)) ? (new Date().getFullYear() + 1).toString() : (Number(year) + 1).toString();
-      noPendaftaran = `SPMB-${year}/${nextYear}-${code}`;
+      noPendaftaran = `SPMB-${yearFormatted}-${code}`;
       isUnique = !registrations.some((r: any) => r["No Pendaftaran"] === noPendaftaran);
     }
 
