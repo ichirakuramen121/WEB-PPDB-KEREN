@@ -270,8 +270,8 @@ export default function Home() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 hover:shadow-md transition-all relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-2 h-full bg-indigo-600"></div>
               <div className="text-sm font-bold text-indigo-600 uppercase mb-2">2. Pengumuman Kelulusan</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-1">03 Juli 2026</h3>
-              <p className="text-indigo-600 font-semibold text-sm mb-4">Hari Jumat secara online</p>
+              <h3 className="text-xl font-bold text-slate-900 mb-1">02 Juli 2026</h3>
+              <p className="text-indigo-600 font-semibold text-sm mb-4">Hari Kamis secara online</p>
               <p className="text-slate-600 text-sm leading-relaxed">Hasil seleksi calon peserta didik diumumkan di portal ini. Silakan masukkan Nomor Pendaftaran Anda.</p>
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 hover:shadow-md transition-all relative overflow-hidden group">
