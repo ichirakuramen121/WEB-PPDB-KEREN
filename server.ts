@@ -117,7 +117,7 @@ async function startServer() {
     const initialRegistrations = [
       {
         Timestamp: new Date().toISOString(),
-        "No Pendaftaran": "SPMB-2026-H8K3",
+        "No Pendaftaran": "SPMB-2026/2027-H8K3",
         "Nama Lengkap": "Budi Santoso",
         "NIK": "1234567890123456",
         "Tempat Lahir": "Tasikmalaya",
@@ -184,7 +184,8 @@ async function startServer() {
     let isUnique = false;
     while (!isUnique) {
       const code = generateRandomCode(4);
-      noPendaftaran = `SPMB-${year}-${code}`;
+      const nextYear = isNaN(Number(year)) ? (new Date().getFullYear() + 1).toString() : (Number(year) + 1).toString();
+      noPendaftaran = `SPMB-${year}/${nextYear}-${code}`;
       isUnique = !registrations.some((r: any) => r["No Pendaftaran"] === noPendaftaran);
     }
 

@@ -367,9 +367,11 @@ function handleRegistration(data) {
 
   var noPendaftaran = "";
   var isUnique = false;
+  var nextActiveYearVal = Number(activeYear);
+  var nextActiveYearStr = isNaN(nextActiveYearVal) ? (new Date().getFullYear() + 1).toString() : (nextActiveYearVal + 1).toString();
   while (!isUnique) {
     var code = generateRandomCode(4);
-    noPendaftaran = "SPMB-" + activeYear + "-" + code;
+    noPendaftaran = "SPMB-" + activeYear + "/" + nextActiveYearStr + "-" + code;
     isUnique = existingNo.indexOf(noPendaftaran) === -1;
   }
   
