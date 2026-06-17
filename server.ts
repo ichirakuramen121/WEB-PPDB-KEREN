@@ -117,7 +117,7 @@ async function startServer() {
     const initialRegistrations = [
       {
         Timestamp: new Date().toISOString(),
-        "No Pendaftaran": "SPMB-2026-001",
+        "No Pendaftaran": "SPMB-2026-H8K3",
         "Nama Lengkap": "Budi Santoso",
         "NIK": "1234567890123456",
         "Tempat Lahir": "Tasikmalaya",
