@@ -28,7 +28,7 @@ export default function MaintenancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#E5F1FC] text-[#2C3E50] flex flex-col justify-between font-sans antialiased relative">
+    <div className="min-h-screen bg-[#DBF0FC] text-[#2C3E50] flex flex-col justify-between font-sans antialiased relative">
       
       {/* Spacer or very thin elegant top strip */}
       <div></div>
