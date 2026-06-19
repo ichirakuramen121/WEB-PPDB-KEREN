@@ -32,7 +32,8 @@ import { calculateDistance } from '../utils/distance';
 export default function RegistrationForm() {
   const { settings } = useSettings();
   const scheduledStatus = getScheduledStatus(settings);
-  const isClosed = scheduledStatus.status === 'Tutup';
+  const isAdminSession = sessionStorage.getItem('isAdmin') === 'true';
+  const isClosed = scheduledStatus.status === 'Tutup' && !isAdminSession;
 
   const [deviceRegistered, setDeviceRegistered] = useState(() => {
     return localStorage.getItem('has_registered') === 'true' || document.cookie.includes('has_registered=true');
@@ -713,7 +714,7 @@ export default function RegistrationForm() {
             </div>
             <div className="text-[11px] text-amber-600 font-medium flex items-center gap-1.5 bg-amber-50/70 p-2 rounded-xl border border-amber-100">
               <span className="flex-shrink-0 text-xs">⚠️</span>
-              <span><strong>PERHATIAN:</strong> Mohon teliti dalam memasukkan Tanggal Lahir (HARI/BULAN/TAHUN) untuk menghindari kesalahan format pada perangkat lain.</span>
+              <span><strong>PERHATIAN:</strong> Mohon teliti dalam memasukkan Tanggal Lahir (HARI/BULAN/TAHUN).</span>
             </div>
           </div>
         );
@@ -794,6 +795,18 @@ export default function RegistrationForm() {
     <div className="min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8 pt-28">
       <div className="max-w-6xl mx-auto">
         
+        {isAdminSession && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-900 rounded-3xl p-5 flex items-start gap-4 shadow-sm">
+            <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
+              <Info size={22} className="stroke-[2.5]" />
+            </div>
+            <div className="text-sm">
+              <p className="font-extrabold text-blue-800">Mode Uji Coba Admin (Bypass Aktif)</p>
+              <p className="text-blue-700 mt-1 leading-relaxed font-medium">Sistem menyala dalam bypass khusus karena Anda masuk sebagai Admin. Anda dapat dengan bebas mengisi data pendaftaran dan menguji fungsionalitas formulir tanpa terbuka untuk pendaftar umum.</p>
+            </div>
+          </div>
+        )}
+
         {/* Banner header */}
         <div className="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-3xl p-6 md:p-8 text-white shadow-lg border border-blue-600 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden relative">
           <div className="absolute top-[-50px] right-[-50px] w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>

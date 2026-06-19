@@ -462,133 +462,138 @@ export default function CheckStatus() {
     switch (displayStatus) {
       case 'Lulus':
         return (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+          <div className="bg-green-50 border border-green-200 rounded-xl p-6 md:p-8 text-center">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <CheckCircle className="text-green-600" size={32} />
             </div>
-            <h3 className="text-2xl font-bold text-green-800 mb-2">Selamat! Anda Lulus</h3>
-            <p className="text-green-700 mb-4">Anda dinyatakan LULUS seleksi SPMB Online {settings?.namaSekolah || 'SDN Citapen'}.</p>
+            <h3 className="text-2xl md:text-3xl font-bold text-green-800 mb-2">Selamat! Anda Lulus</h3>
+            <p className="text-green-700 mb-6 font-medium">Anda dinyatakan LULUS seleksi SPMB Online {settings?.namaSekolah || 'SDN Citapen'}.</p>
             
-            <div className="bg-white rounded-lg p-5 border border-green-200 text-left mb-6 shadow-sm">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 font-semibold text-xs mb-4 flex items-start gap-2">
-                <span className="bg-red-200 text-red-800 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">!</span>
-                <span>Calon siswa wajib membawa seluruh berkas fisik persyaratan lengkap & dokumen sekolah ketika daftar ulang ke sekolah.</span>
-              </div>
-              
-              <h4 className="font-bold text-green-800 mb-2 text-sm uppercase">Persyaratan Daftar Ulang (Wajib Dibawa):</h4>
-              {settings?.tanggalDaftarUlang && (
-                <p className="text-sm text-green-700 mb-3 font-semibold">
-                  Jadwal Daftar Ulang: {safeFormatDate(settings.tanggalDaftarUlang)}
-                </p>
-              )}
-              <div className="text-sm text-slate-700 whitespace-pre-line space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                {settings?.persyaratanDaftarUlang || '1. Membawa Bukti Kelulusan yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal'}
-              </div>
-
-              {settings?.googleDriveDaftarUlang && (() => {
-                const parseGoogleDriveLinks = (val?: string) => {
-                  if (!val) return [];
-                  const trimmed = val.trim();
-                  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-                    try {
-                      const parsed = JSON.parse(trimmed);
-                      if (Array.isArray(parsed)) {
-                        return parsed.map((item: any, index) => {
-                          if (typeof item === 'object' && item !== null && item.url) {
-                            return {
-                              label: item.label || `Link Dokumen ${index + 1}`,
-                              url: item.url.trim()
-                            };
-                          } else if (typeof item === 'string') {
-                            return {
-                              label: `Link Dokumen ${index + 1}`,
-                              url: item.trim()
-                            };
-                          }
-                          return null;
-                        }).filter(Boolean) as { label: string; url: string }[];
-                      }
-                    } catch (e) {
-                      console.warn("JSON parse failed", e);
-                    }
-                  }
-                  
-                  // Backwards compatibility with comma or newline separated plain URLs
-                  const urls = trimmed.split(/[\n,;]+/).map(u => u.trim()).filter(u => u.startsWith('http'));
-                  if (urls.length > 0) {
-                    return urls.map((url, idx) => ({
-                      label: urls.length === 1 ? 'Buka Google Drive Berkas Resmi' : `Unduh Dokumen ${idx + 1}`,
-                      url
-                    }));
-                  }
-                  
-                  if (trimmed) {
-                    return [{
-                      label: 'Buka Google Drive Berkas Resmi',
-                      url: trimmed
-                    }];
-                  }
-                  return [];
-                };
-
-                const links = parseGoogleDriveLinks(settings.googleDriveDaftarUlang);
-                if (links.length === 0) return null;
-
-                return (
-                  <div className="mt-4 p-4 rounded-xl border border-indigo-200 bg-indigo-50/70 text-indigo-900">
-                    <h5 className="font-bold flex items-center gap-2 text-indigo-850 text-sm">
-                      <Download size={16} /> Berkas Formulir Google Drive ({links.length})
-                    </h5>
-                    <p className="text-xs text-indigo-700 mt-1 mb-2">
-                      Silakan unduh dokumen/formulir tambahan resmi di bawah melalui Google Drive, cetak mandiri di rumah, dan bawa saat melakukan pendaftaran ulang fisik ke sekolah:
-                    </p>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {links.map((link, idx) => (
-                        <a
-                          key={idx}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors shadow-sm"
-                        >
-                          <Download size={12} /> {link.label} <ArrowRight size={12} />
-                        </a>
-                      ))}
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left mb-6">
+              {/* Left Column: Requirements */}
+              <div className="bg-white rounded-2xl p-6 border border-green-200 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-800 font-semibold text-xs mb-4 flex items-start gap-2.5">
+                    <span className="bg-red-200 text-red-800 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5 font-bold">!</span>
+                    <span>Calon siswa wajib membawa seluruh berkas fisik persyaratan lengkap & dokumen sekolah ketika daftar ulang ke sekolah.</span>
                   </div>
-                );
-              })()}
-
-              {settings?.isRapatAktif && (
-                <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50/50 text-slate-800">
-                  <h5 className="font-bold flex items-center gap-2 text-amber-800 text-sm">
-                    <Calendar size={16} /> {settings.rapatJudul || "Pemberitahuan Rapat Orang Tua"}
-                  </h5>
-                  <div className="text-xs text-slate-705 space-y-1 mt-1.5 leading-relaxed">
-                    <p>{settings.rapatDeskripsi}</p>
-                    <div className="pt-2 select-none font-semibold text-slate-800 grid grid-cols-1 gap-1 border-t border-amber-200/50 mt-2">
-                       <div>📅 <b>Hari / Tanggal:</b> {formatRapatTanggal(settings.rapatTanggal) || "Sabtu, 11 Juli 2026"}</div>
-                       <div>⏰ <b>Waktu:</b> {settings.rapatWaktu || "08:00 WIB s.d Selesai"}</div>
-                       <div>📍 <b>Tempat:</b> {settings.rapatTempat || "Aula SDN Citapen"}</div>
-                    </div>
+                  
+                  <h4 className="font-bold text-green-800 mb-2 text-sm uppercase tracking-wide">Persyaratan Daftar Ulang (Wajib Dibawa):</h4>
+                  {settings?.tanggalDaftarUlang && (
+                    <p className="text-sm text-green-700 mb-3 font-semibold">
+                      Jadwal Daftar Ulang: {safeFormatDate(settings.tanggalDaftarUlang)}
+                    </p>
+                  )}
+                  <div className="text-sm text-slate-700 whitespace-pre-line space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-155 leading-relaxed font-sans">
+                    {settings?.persyaratanDaftarUlang || '1. Membawa Bukti Kelulusan yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal'}
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* Right Column: Google Drive Downloads & Rapat Orang Tua */}
+              <div className="space-y-6 flex flex-col justify-start">
+                {settings?.googleDriveDaftarUlang && (() => {
+                  const parseGoogleDriveLinks = (val?: string) => {
+                    if (!val) return [];
+                    const trimmed = val.trim();
+                    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                      try {
+                        const parsed = JSON.parse(trimmed);
+                        if (Array.isArray(parsed)) {
+                          return parsed.map((item: any, index) => {
+                            if (typeof item === 'object' && item !== null && item.url) {
+                              return {
+                                label: item.label || `Link Dokumen ${index + 1}`,
+                                url: item.url.trim()
+                              };
+                            } else if (typeof item === 'string') {
+                              return {
+                                label: `Link Dokumen ${index + 1}`,
+                                url: item.trim()
+                              };
+                            }
+                            return null;
+                          }).filter(Boolean) as { label: string; url: string }[];
+                        }
+                      } catch (e) {
+                        console.warn("JSON parse failed", e);
+                      }
+                    }
+                    
+                    // Backwards compatibility with comma or newline separated plain URLs
+                    const urls = trimmed.split(/[\n,;]+/).map(u => u.trim()).filter(u => u.startsWith('http'));
+                    if (urls.length > 0) {
+                      return urls.map((url, idx) => ({
+                        label: urls.length === 1 ? 'Buka Google Drive Berkas Resmi' : `Unduh Dokumen ${idx + 1}`,
+                        url
+                      }));
+                    }
+                    
+                    if (trimmed) {
+                      return [{
+                        label: 'Buka Google Drive Berkas Resmi',
+                        url: trimmed
+                      }];
+                    }
+                    return [];
+                  };
+
+                  const links = parseGoogleDriveLinks(settings.googleDriveDaftarUlang);
+                  if (links.length === 0) return null;
+
+                  return (
+                    <div className="p-5 rounded-2xl border border-indigo-200 bg-white text-indigo-900 shadow-sm flex-1">
+                      <h5 className="font-bold flex items-center gap-2 text-indigo-900 text-sm">
+                        <Download size={16} /> Berkas yang harus diunduh dan dicetak ({links.length})
+                      </h5>
+                      <p className="text-xs text-indigo-700 mt-1 mb-3.5 leading-relaxed">
+                        Silakan unduh dokumen/formulir tambahan resmi di bawah melalui Google Drive, cetak mandiri di rumah, dan bawa saat melakukan pendaftaran ulang fisik ke sekolah:
+                      </p>
+                      <div className="flex flex-col gap-2 mt-2">
+                        {links.map((link, idx) => (
+                          <a
+                            key={idx}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-between bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 text-xs font-bold px-4 py-3 rounded-xl transition-colors border border-indigo-150 shadow-xs"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Download size={14} className="text-indigo-600" />
+                              {link.label}
+                            </span>
+                            <ArrowRight size={14} className="text-indigo-500" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {settings?.isRapatAktif && (
+                  <div className="p-5 rounded-2xl border border-amber-200 bg-white text-slate-800 shadow-sm flex-1">
+                    <h5 className="font-bold flex items-center gap-2 text-amber-800 text-sm">
+                      <Calendar size={16} /> {settings.rapatJudul || "Pemberitahuan Rapat Orang Tua"}
+                    </h5>
+                    <div className="text-xs text-slate-700 space-y-2 mt-2 leading-relaxed">
+                      <p>{settings.rapatDeskripsi}</p>
+                      <div className="pt-3 select-none font-semibold text-slate-800 grid grid-cols-1 gap-1 border-t border-amber-150 mt-2 text-xs">
+                         <div>📅 <b>Hari / Tanggal:</b> {formatRapatTanggal(settings.rapatTanggal) || "Sabtu, 11 Juli 2026"}</div>
+                         <div>⏰ <b>Waktu:</b> {settings.rapatWaktu || "08:00 WIB s.d Selesai"}</div>
+                         <div>📍 <b>Tempat:</b> {settings.rapatTempat || "Aula SDN Citapen"}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex justify-center mt-2">
               <button
                 onClick={() => printBuktiLulus(data)}
-                className="inline-flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3.5 rounded-xl font-medium transition-colors shadow-sm"
+                className="inline-flex items-center justify-center gap-3 w-full sm:w-2/3 bg-blue-600 hover:bg-blue-700 text-white px-5 py-4 rounded-xl font-bold transition-all shadow-md hover:shadow-lg active:scale-98 uppercase tracking-wide text-xs md:text-sm"
               >
                 <Printer size={18} /> Cetak Bukti Kelulusan
-              </button>
-              
-              <button
-                onClick={() => printDokumenDaftarUlang(data)}
-                className="inline-flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3.5 rounded-xl font-semibold transition-colors shadow-md"
-              >
-                <Download size={18} /> Unduh Dokumen Sekolah (Syarat Print)
               </button>
             </div>
           </div>
@@ -630,8 +635,8 @@ export default function CheckStatus() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center">
-      <div className="max-w-md w-full">
-        <Link to="/" className="inline-flex items-center text-sm text-slate-500 hover:text-blue-600 mb-6 transition-colors">
+      <div className={cn("w-full transition-all duration-500 ease-in-out", result && result.status === 'Lulus' ? "max-w-5xl" : "max-w-2xl")}>
+        <Link to="/" className="inline-flex items-center text-sm text-slate-500 hover:text-blue-600 mb-6 transition-colors font-medium">
           <ArrowLeft size={16} className="mr-1" /> Kembali ke Beranda
         </Link>
         

@@ -435,7 +435,8 @@ export const submitRegistration = async (data: RegistrationData) => {
     
     // In-memory local fallback if Express API is offline or not responsive
     const scheduled = getScheduledStatus(mockSettings);
-    if (scheduled.status === 'Tutup') {
+    const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
+    if (scheduled.status === 'Tutup' && !isAdmin) {
       return { status: "error", message: scheduled.info };
     }
     let year = mockSettings.tahunPendaftaran || new Date().getFullYear().toString();

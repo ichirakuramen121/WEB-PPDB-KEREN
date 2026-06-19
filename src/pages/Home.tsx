@@ -8,7 +8,8 @@ import { getScheduledStatus } from '../services/api';
 export default function Home() {
   const { settings } = useSettings();
   const scheduled = getScheduledStatus(settings);
-  const isClosed = scheduled.status === 'Tutup';
+  const isAdminSession = sessionStorage.getItem('isAdmin') === 'true';
+  const isClosed = scheduled.status === 'Tutup' && !isAdminSession;
   const displayYear = settings?.tahunPendaftaran || new Date().getFullYear().toString();
 
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
@@ -72,6 +73,17 @@ export default function Home() {
         <div className={`absolute inset-0 bg-gradient-to-br from-blue-50/90 via-white/80 to-green-50/90 ${settings?.gambarHeaderBeranda ? '' : 'backdrop-blur-sm'}`}></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {isAdminSession && (
+            <div className="max-w-3xl mx-auto mb-8 bg-blue-50 border border-blue-200 text-blue-900 rounded-3xl p-5 flex items-start gap-4 shadow-sm text-left">
+              <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
+                <Clock size={20} className="stroke-[2.5]" />
+              </div>
+              <div className="text-sm">
+                <p className="font-extrabold text-blue-800">Mode Uji Coba Admin (Landing Page Bypass)</p>
+                <p className="text-blue-700 mt-1 leading-relaxed font-semibold">Meskipun pendaftaran untuk umum saat ini sedang ditutup / dalam jadwal yang ditentukan, Anda masuk sebagai Admin sehingga dapat melihat dan menavigasi ke formulir pendaftaran secara bebas untuk mengetes/mengisi data tanpa ada batasan.</p>
+              </div>
+            </div>
+          )}
           <div className="text-center max-w-3xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: -20 }}
