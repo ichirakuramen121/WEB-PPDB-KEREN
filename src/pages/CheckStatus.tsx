@@ -234,9 +234,9 @@ export default function CheckStatus() {
  
     // Signature Area
     const today = new Date();
-    const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+    const dateStr = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const tempat = settings?.tempatSurat || '....................';
-    const tanggal = settings?.tanggalSurat || dateStr;
+    const tanggal = settings?.tanggalSurat ? safeFormatDate(settings.tanggalSurat) : dateStr;
     
     doc.text(`${tempat}, ${tanggal}`, 140, currentY);
     doc.text('Kepala Sekolah', 140, currentY + 6);
@@ -359,9 +359,9 @@ export default function CheckStatus() {
     currentY += splitStatement.length * 5 + 15;
     
     const today = new Date();
-    const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+    const dateStr = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const tempat = settings?.tempatSurat || 'Tasikmalaya';
-    const tanggal = settings?.tanggalSurat || dateStr;
+    const tanggal = settings?.tanggalSurat ? safeFormatDate(settings.tanggalSurat) : dateStr;
     
     doc.text(`${tempat}, ${tanggal}`, 130, currentY);
     currentY += 6;
