@@ -125,6 +125,7 @@ function doPost(e) {
     if (data.action === "login") return handleLogin(data.username, data.password);
     if (data.action === "checkStatus") return handleCheckStatus(data.noPendaftaran);
     if (data.action === "updateStatus") return updateStatus(data.noPendaftaran, data.newStatus, data.alasan);
+    if (data.action === "deleteRegistration") return deleteRegistration(data.noPendaftaran);
     if (data.action === "updateSettings") return handleUpdateSettings(data.settings);
     
     return handleRegistration(data);
@@ -485,6 +486,23 @@ function updateStatus(noPendaftaran, newStatus, alasan) {
         sheet.getRange(i + 1, alasanIdx + 1).setValue(alasan || "");
       }
       return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Status berhasil diupdate" })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Data tidak ditemukan" })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function deleteRegistration(noPendaftaran) {
+  ensureSheetsExist();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const noRegIdx = headers.indexOf("No Pendaftaran");
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][noRegIdx] === noPendaftaran) {
+      sheet.deleteRow(i + 1);
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Data berhasil dihapus" })).setMimeType(ContentService.MimeType.JSON);
     }
   }
   return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Data tidak ditemukan" })).setMimeType(ContentService.MimeType.JSON);

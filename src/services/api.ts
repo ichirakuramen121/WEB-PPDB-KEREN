@@ -1,7 +1,7 @@
 // Service to interact with Google Apps Script Backend
 
 // To use the real backend, replace this URL with your deployed Google Apps Script Web App URL
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwu7_Pe5mwOiC--FupC6G23axBmVp-SwupjhqtyXxe0VfzfaPDdz1AMlL_4lhwjLkbl/exec"; 
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxfzru55zD2LqfXjql40jBUQQ2__iv-YfMD9MWgFYXztzFNAOX1jmwm0WbFvpMOLnV_/exec"; 
 
 export interface FormField {
   id: string;
@@ -657,3 +657,45 @@ export const loginAdmin = async (username: string, password: string) => {
     throw error;
   }
 };
+
+export const deleteRegistration = async (noPendaftaran: string) => {
+  if (!GAS_WEB_APP_URL) {
+    try {
+      const response = await fetch(`/api/registrations/${encodeURIComponent(noPendaftaran)}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        return result;
+      }
+    } catch (e) {
+      console.error("Failed to delete registration in Express API", e);
+    }
+    const index = mockData.findIndex(d => d['No Pendaftaran'] === noPendaftaran);
+    if (index !== -1) {
+      const newData = [...mockData];
+      newData.splice(index, 1);
+      saveMockData(newData);
+      return { status: "success" };
+    }
+    throw new Error("Data tidak ditemukan");
+  }
+
+  try {
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "deleteRegistration",
+        noPendaftaran,
+      }),
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting registration:", error);
+    throw error;
+  }
+};
+

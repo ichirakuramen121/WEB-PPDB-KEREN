@@ -232,6 +232,21 @@ async function startServer() {
     res.status(404).json({ status: "error", message: "Data tidak ditemukan" });
   });
 
+  // API - Delete Registration
+  app.delete("/api/registrations/:noPendaftaran", async (req, res) => {
+    const { noPendaftaran } = req.params;
+    const registrations = await loadRegistrations();
+    const index = registrations.findIndex((r: any) => r["No Pendaftaran"] === noPendaftaran);
+
+    if (index !== -1) {
+      registrations.splice(index, 1);
+      await saveRegistrations(registrations);
+      return res.json({ status: "success" });
+    }
+
+    res.status(404).json({ status: "error", message: "Data tidak ditemukan" });
+  });
+
   // API - Check Status
   app.post("/api/registrations/check", async (req, res) => {
     const { noPendaftaran } = req.body;

@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { getRegistrations, updateStatus, AdminData, updateSettings, getSettings } from '../services/api';
+import { getRegistrations, updateStatus, AdminData, updateSettings, getSettings, deleteRegistration } from '../services/api';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
@@ -381,6 +381,47 @@ export default function AdminDashboard() {
     } catch (error) {
       Swal.fire('Error', 'Gagal mengupdate status', 'error');
     }
+  };
+
+  const handleDeleteRegistration = async (noPendaftaran: string, name: string) => {
+    Swal.fire({
+      title: 'Hapus Data Siswa?',
+      text: `Apakah Anda yakin ingin menghapus data pendaftaran untuk ${name} (${noPendaftaran})? Tindakan ini tidak dapat dibatalkan!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Menghapus...',
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading()
+        });
+        
+        try {
+          await deleteRegistration(noPendaftaran);
+          
+          setData(prev => prev.filter(item => item['No Pendaftaran'] !== noPendaftaran));
+          
+          if (selectedStudent && selectedStudent['No Pendaftaran'] === noPendaftaran) {
+            setSelectedStudent(null);
+          }
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Terhapus',
+            text: 'Data pendaftaran siswa berhasil dihapus.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } catch (error) {
+          Swal.fire('Error', 'Gagal menghapus data siswa', 'error');
+        }
+      }
+    });
   };
 
   const handleSaveSettings = async () => {
@@ -871,6 +912,14 @@ export default function AdminDashboard() {
                               )}
                               <button onClick={() => printCard(item)} className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 px-2 py-1 rounded transition-colors" title="Cetak Kartu">
                                 <Printer size={18} />
+                              </button>
+                              
+                              <button 
+                                onClick={() => handleDeleteRegistration(item['No Pendaftaran'], getFieldValue(item, 'Nama Lengkap') || 'Siswa')} 
+                                className="text-rose-600 hover:text-rose-950 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-950/50 px-2 py-1 rounded transition-colors" 
+                                title="Hapus Data"
+                              >
+                                <Trash size={18} />
                               </button>
                             </div>
                           </td>
@@ -2203,6 +2252,13 @@ export default function AdminDashboard() {
                           Ubah ke Tidak Lulus
                         </button>
                       )}
+                      <button 
+                        onClick={() => handleDeleteRegistration(selectedStudent['No Pendaftaran'], getFieldValue(selectedStudent, 'Nama Lengkap') || 'Siswa')} 
+                        className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5"
+                        title="Hapus Data Siswa"
+                      >
+                        <Trash size={16} /> Hapus
+                      </button>
                     </div>
                   </div>
 
