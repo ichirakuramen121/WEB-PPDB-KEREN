@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getSettings, AppSettings } from '../services/api';
+import { getSettings, AppSettings, getInitialMockSettings } from '../services/api';
 
 interface SettingsContextType {
-  settings: AppSettings | null;
+  settings: AppSettings;
   isLoading: boolean;
   refreshSettings: (directSettings?: AppSettings) => Promise<void>;
 }
@@ -10,22 +10,24 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings | null>(() => {
+  const [settings, setSettings] = useState<AppSettings>(() => {
     const cached = localStorage.getItem('app_settings_cache');
-    return cached ? JSON.parse(cached) : null;
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        console.error("Failed to parse cached settings", e);
+      }
+    }
+    return getInitialMockSettings();
   });
-  const [isLoading, setIsLoading] = useState(!settings);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchSettings = async (directSettings?: AppSettings) => {
     if (directSettings) {
       setSettings(directSettings);
       localStorage.setItem('app_settings_cache', JSON.stringify(directSettings));
       return;
-    }
-
-    // Only set loading if we don't have cached data
-    if (!settings) {
-      setIsLoading(true);
     }
     
     try {

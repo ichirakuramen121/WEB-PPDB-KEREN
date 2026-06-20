@@ -81,7 +81,7 @@ export interface AdminData extends RegistrationData {
 }
 
 // Mock data for preview if GAS URL is not set
-const getInitialMockSettings = (): AppSettings => {
+export const getInitialMockSettings = (): AppSettings => {
   const defaultSettings: AppSettings = {
     namaSekolah: "SDN Citapen",
     isMaintenance: false,
