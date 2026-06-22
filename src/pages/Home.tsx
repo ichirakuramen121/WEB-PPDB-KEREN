@@ -390,7 +390,7 @@ export default function Home() {
                 step: "02",
                 icon: <BookOpen size={28} />,
                 title: "Upload Berkas",
-                desc: "Unggah dokumen persyaratan (Foto, KK, Akta Kelahiran)."
+                desc: "Unggah dokumen persyaratan."
               },
               {
                 step: "03",
