@@ -544,23 +544,20 @@ export default function AdminDashboard() {
       formattedItem['Waktu Pendaftaran (WIB)'] = formatJakartaTimestamp(item.Timestamp || item.timestamp);
       formattedItem['Status Kelulusan'] = item.Status || 'Proses';
       
-      // 2. Form fields in order of setting configuration
-      if (settings?.formFields) {
-        settings.formFields.forEach((field: any) => {
-          const value = getFieldValue(item, field.id);
-          
-          if (field.type === 'file') {
-            formattedItem[field.label] = isFileUploaded(value) ? 'Tersedia' : 'Tidak Ada';
-          } else if (field.id === 'Tanggal Lahir' || field.label === 'Tanggal Lahir') {
-            formattedItem[field.label] = formatDate(value);
-            formattedItem['Usia'] = calculateAge(value, settings?.tanggalCutoffUsia);
-          } else {
-            formattedItem[field.label] = renderValue(value);
-          }
-        });
-      }
+      const enriched = enrichFields(settings?.formFields || []);
       
-      // 3. Distance and map link fields
+      // 2. Identitas Siswa (Session 1)
+      enriched.filter((f: any) => f.session === 1 && f.type !== 'file').forEach((field: any) => {
+        const value = getFieldValue(item, field.id);
+        if (field.id === 'Tanggal Lahir' || field.label === 'Tanggal Lahir') {
+          formattedItem[field.label] = formatDate(value);
+          formattedItem['Usia'] = calculateAge(value, settings?.tanggalCutoffUsia);
+        } else {
+          formattedItem[field.label] = renderValue(value);
+        }
+      });
+      
+      // 3. Jarak & Lokasi Siswa
       if (item['Jarak ke Sekolah (km)'] !== undefined) {
         formattedItem['Jarak ke Sekolah (km)'] = item['Jarak ke Sekolah (km)'];
       }
@@ -569,7 +566,25 @@ export default function AdminDashboard() {
         formattedItem['Link Maps'] = `https://www.google.com/maps/search/?api=1&query=${item['Koordinat Lokasi']}`;
       }
       
-      // 4. Rejection reason
+      // 4. Identitas Orang Tua (Session 2)
+      enriched.filter((f: any) => f.session === 2 && f.type !== 'file').forEach((field: any) => {
+        const value = getFieldValue(item, field.id);
+        formattedItem[field.label] = renderValue(value);
+      });
+      
+      // 5. Identitas Wali (Session 3)
+      enriched.filter((f: any) => f.session === 3 && f.type !== 'file').forEach((field: any) => {
+        const value = getFieldValue(item, field.id);
+        formattedItem[field.label] = renderValue(value);
+      });
+      
+      // 6. Upload Berkas (Session 4 or any type 'file')
+      enriched.filter((f: any) => f.session === 4 || f.type === 'file').forEach((field: any) => {
+        const value = getFieldValue(item, field.id);
+        formattedItem[field.label] = isFileUploaded(value) ? 'Tersedia' : 'Tidak Ada';
+      });
+      
+      // 7. Alasan Penolakan
       formattedItem['Alasan Penolakan'] = item['Alasan Penolakan'] || '-';
       
       return formattedItem;

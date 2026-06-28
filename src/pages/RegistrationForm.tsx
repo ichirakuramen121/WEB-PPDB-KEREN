@@ -31,6 +31,14 @@ import { calculateDistance } from '../utils/distance';
 
 export default function RegistrationForm() {
   const { settings } = useSettings();
+  
+  const renderVerificationValue = (val: any) => {
+    if (val === undefined || val === null || val === '') return '-';
+    if (typeof val === 'string' && val.trim().startsWith('data:')) {
+      return 'Berkas Terunggah';
+    }
+    return String(val);
+  };
   const scheduledStatus = getScheduledStatus(settings);
   const isAdminSession = sessionStorage.getItem('isAdmin') === 'true';
   const isClosed = scheduledStatus.status === 'Tutup' && !isAdminSession;
@@ -248,8 +256,13 @@ export default function RegistrationForm() {
       return `${day}/${month}/${year}`;
     };
 
-    // Filters non-file fields
-    const printableFields = getFieldsForSummary().filter(field => field.type !== 'file');
+    // Filters non-file fields and fields with base64 data to keep PDF neat
+    const printableFields = getFieldsForSummary().filter(field => {
+      if (field.type === 'file') return false;
+      const val = formData[field.label];
+      if (typeof val === 'string' && val.trim().startsWith('data:')) return false;
+      return true;
+    });
     
     // Split into left and right columns
     const half = Math.ceil(printableFields.length / 2);
@@ -293,6 +306,9 @@ export default function RegistrationForm() {
       if (field.type === 'date') {
         value = formatDate(value);
       }
+      if (typeof value === 'string' && value.trim().startsWith('data:')) {
+        value = 'Berkas Terunggah';
+      }
       const splitVal = doc.splitTextToSize(String(value), 52);
       doc.text(splitVal, 50, col1Y);
       
@@ -311,6 +327,9 @@ export default function RegistrationForm() {
       let value = formData[field.label] || '-';
       if (field.type === 'date') {
         value = formatDate(value);
+      }
+      if (typeof value === 'string' && value.trim().startsWith('data:')) {
+        value = 'Berkas Terunggah';
       }
       const splitVal = doc.splitTextToSize(String(value), 52);
       doc.text(splitVal, 145, col2Y);
@@ -1153,7 +1172,7 @@ export default function RegistrationForm() {
                           {getFieldsForSummary().filter(f => getFieldSession(f) === 1).map(field => (
                             <div key={field.id} className="flex flex-col">
                               <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{field.label}</span>
-                              <span className="text-slate-800 font-semibold mt-0.5">{formData[field.label] || '-'}</span>
+                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[field.label])}</span>
                             </div>
                           ))}
                           {distance !== null && (
@@ -1174,7 +1193,7 @@ export default function RegistrationForm() {
                           {getFieldsForSummary().filter(f => getFieldSession(f) === 2 || getFieldSession(f) === 3).map(field => (
                             <div key={field.id} className="flex flex-col">
                               <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{field.label}</span>
-                              <span className="text-slate-800 font-semibold mt-0.5">{formData[field.label] || '-'}</span>
+                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[field.label])}</span>
                             </div>
                           ))}
                         </div>
