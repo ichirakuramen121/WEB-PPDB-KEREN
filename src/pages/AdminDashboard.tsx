@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Filter, Download, Printer, CheckCircle, XCircle, Clock, FileText, Moon, Sun, Loader2, LogOut, Eye, X, Settings, LayoutDashboard, RefreshCw, ArrowUp, ArrowDown, Trash } from 'lucide-react';
+import { Search, Filter, Download, Printer, CheckCircle, XCircle, Clock, FileText, Moon, Sun, Loader2, LogOut, Eye, EyeOff, X, Settings, LayoutDashboard, RefreshCw, ArrowUp, ArrowDown, Trash } from 'lucide-react';
 import Swal from 'sweetalert2';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -109,6 +109,13 @@ const renderValue = (val: any) => {
   return String(val);
 };
 
+const isFileUploaded = (url: any): boolean => {
+  if (!url) return false;
+  if (typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  return trimmed.startsWith('data:') || trimmed.startsWith('http://') || trimmed.startsWith('https://');
+};
+
 const enrichFields = (fields: any[]): any[] => {
   return (fields || []).map((field, idx) => {
     let session = field.session;
@@ -157,6 +164,16 @@ export default function AdminDashboard() {
   const [settingsTab, setSettingsTab] = useState<'school' | 'form' | 'surat' | 'daftar-ulang' | 'kepala-sekolah' | 'panduan'>('school');
   const itemsPerPage = 10;
   const navigate = useNavigate();
+
+  const [showTrendChart, setShowTrendChart] = useState<boolean>(() => {
+    return localStorage.getItem('show_trend_chart') !== 'false';
+  });
+
+  const toggleTrendChart = () => {
+    const newValue = !showTrendChart;
+    setShowTrendChart(newValue);
+    localStorage.setItem('show_trend_chart', String(newValue));
+  };
 
   // Settings State
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -635,12 +652,12 @@ export default function AdminDashboard() {
 
   const filteredData = useMemo(() => {
     return data.filter(item => {
-      const nama = getFieldValue(item, 'Nama Lengkap') || '';
-      const nik = getFieldValue(item, 'NIK') || '';
-      const no = item['No Pendaftaran'] || '';
+      const nama = String(getFieldValue(item, 'Nama Lengkap') || '');
+      const nik = String(getFieldValue(item, 'NIK') || '');
+      const no = String(item['No Pendaftaran'] || '');
       
       const matchesSearch = nama.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            nik.includes(searchTerm) ||
+                            nik.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             no.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = statusFilter === 'Semua' || item.Status === statusFilter;
       return matchesSearch && matchesFilter;
@@ -760,57 +777,80 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-center mb-4">
                 <div>
                   <h3 className={cn("text-base font-bold", isDarkMode ? "text-white" : "text-slate-800")}>Grafik Tren Pendaftaran Harian</h3>
-                  <p className={cn("text-xs font-medium mt-0.5", isDarkMode ? "text-slate-400" : "text-slate-500")}>Statistik ditarik realtime berdasarkan Waktu Indonesia Barat (WIB / Asia/Jakarta)</p>
+                  {showTrendChart && (
+                    <p className={cn("text-xs font-medium mt-0.5", isDarkMode ? "text-slate-400" : "text-slate-500")}>Statistik ditarik realtime berdasarkan Waktu Indonesia Barat (WIB / Asia/Jakarta)</p>
+                  )}
                 </div>
+                <button
+                  onClick={toggleTrendChart}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-lg border flex items-center gap-1.5 transition-all",
+                    isDarkMode 
+                      ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white" 
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  )}
+                >
+                  {showTrendChart ? (
+                    <>
+                      <EyeOff size={14} /> Sembunyikan Grafik
+                    </>
+                  ) : (
+                    <>
+                      <Eye size={14} /> Tampilkan Grafik
+                    </>
+                  )}
+                </button>
               </div>
               
-              {chartData.length === 0 ? (
-                <div className="h-48 flex items-center justify-center border border-dashed rounded-xl border-slate-300 dark:border-slate-700 text-slate-400 italic text-sm">
-                  Belum ada data pendaftar harian untuk ditampilkan.
-                </div>
-              ) : (
+              {showTrendChart && (
                 <div className="h-72 w-full mt-2 select-none">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorPendaftar" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#334155" : "#e2e8f0"} />
-                      <XAxis 
-                        dataKey="tanggal" 
-                        tick={{ fill: isDarkMode ? "#94a3b8" : "#64748b", fontSize: 11 }} 
-                        axisLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
-                        tickLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
-                      />
-                      <YAxis 
-                        allowDecimals={false}
-                        tick={{ fill: isDarkMode ? "#94a3b8" : "#64748b", fontSize: 11 }}
-                        axisLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
-                        tickLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: isDarkMode ? "#0f172a" : "#ffffff", 
-                          borderColor: isDarkMode ? "#334155" : "#e2e8f0",
-                          color: isDarkMode ? "#ffffff" : "#0f172a",
-                          borderRadius: "0.75rem",
-                          fontSize: "12px",
-                          fontWeight: "600"
-                        }}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="Pendaftar" 
-                        stroke="#3b82f6" 
-                        strokeWidth={3} 
-                        fillOpacity={1} 
-                        fill="url(#colorPendaftar)" 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  {chartData.length === 0 ? (
+                    <div className="h-full flex items-center justify-center border border-dashed rounded-xl border-slate-300 dark:border-slate-700 text-slate-400 italic text-sm">
+                      Belum ada data pendaftar harian untuk ditampilkan.
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorPendaftar" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#334155" : "#e2e8f0"} />
+                        <XAxis 
+                          dataKey="tanggal" 
+                          tick={{ fill: isDarkMode ? "#94a3b8" : "#64748b", fontSize: 11 }} 
+                          axisLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
+                          tickLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
+                        />
+                        <YAxis 
+                          allowDecimals={false}
+                          tick={{ fill: isDarkMode ? "#94a3b8" : "#64748b", fontSize: 11 }}
+                          axisLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
+                          tickLine={{ stroke: isDarkMode ? "#475569" : "#cbd5e1" }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: isDarkMode ? "#0f172a" : "#ffffff", 
+                            borderColor: isDarkMode ? "#334155" : "#e2e8f0",
+                            color: isDarkMode ? "#ffffff" : "#0f172a",
+                            borderRadius: "0.75rem",
+                            fontSize: "12px",
+                            fontWeight: "600"
+                          }}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="Pendaftar" 
+                          stroke="#3b82f6" 
+                          strokeWidth={3} 
+                          fillOpacity={1} 
+                          fill="url(#colorPendaftar)" 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               )}
             </div>
@@ -2295,10 +2335,11 @@ export default function AdminDashboard() {
                     <div className="space-y-4">
                       {settings?.formFields.filter(f => f.type === 'file').map(field => {
                         const fileUrl = getFieldValue(selectedStudent, field.id);
+                        const uploaded = isFileUploaded(fileUrl);
                         return (
                           <div key={field.id} className={cn("p-4 rounded-xl border", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
                             <p className="text-sm font-medium mb-2">{field.label}</p>
-                            {fileUrl ? (
+                            {uploaded ? (
                               (typeof fileUrl === 'string' && fileUrl.startsWith('data:image')) ? (
                                 <img src={fileUrl} alt={field.label} className="w-full h-32 object-cover rounded-lg border" />
                               ) : (
