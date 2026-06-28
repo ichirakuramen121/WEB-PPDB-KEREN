@@ -32,10 +32,13 @@ import { calculateDistance } from '../utils/distance';
 export default function RegistrationForm() {
   const { settings } = useSettings();
   
-  const renderVerificationValue = (val: any) => {
+  const renderVerificationValue = (val: any, field?: any) => {
     if (val === undefined || val === null || val === '') return '-';
-    if (typeof val === 'string' && val.trim().startsWith('data:')) {
+    if (field && field.type === 'file') {
       return 'Berkas Terunggah';
+    }
+    if (typeof val === 'string' && val.trim().startsWith('data:')) {
+      return '-';
     }
     return String(val);
   };
@@ -1169,10 +1172,10 @@ export default function RegistrationForm() {
                           Informasi Calon Murid
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3.5 gap-x-6 text-sm">
-                          {getFieldsForSummary().filter(f => getFieldSession(f) === 1).map(field => (
+                          {getFieldsForSummary().filter(f => getFieldSession(f) === 1 && f.type !== 'file').map(field => (
                             <div key={field.id} className="flex flex-col">
                               <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{field.label}</span>
-                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[field.label])}</span>
+                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[field.label], field)}</span>
                             </div>
                           ))}
                           {distance !== null && (
@@ -1190,10 +1193,10 @@ export default function RegistrationForm() {
                           Orang Tua & Wali
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3.5 gap-x-6 text-sm">
-                          {getFieldsForSummary().filter(f => getFieldSession(f) === 2 || getFieldSession(f) === 3).map(field => (
+                          {getFieldsForSummary().filter(f => (getFieldSession(f) === 2 || getFieldSession(f) === 3) && f.type !== 'file').map(field => (
                             <div key={field.id} className="flex flex-col">
                               <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{field.label}</span>
-                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[field.label])}</span>
+                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[field.label], field)}</span>
                             </div>
                           ))}
                         </div>
@@ -1206,7 +1209,7 @@ export default function RegistrationForm() {
                           Berkas Unggahan Terverifikasi
                         </h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                          {getFieldsForSummary().filter(f => getFieldSession(f) === 4).map(field => {
+                          {getFieldsForSummary().filter(f => f.type === 'file').map(field => {
                             const uploaded = !!formData[field.label];
                             const preview = previews[field.label];
                             return (
