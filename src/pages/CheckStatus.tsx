@@ -135,64 +135,37 @@ export default function CheckStatus() {
     const rawTahun = settings?.tahunPendaftaran || new Date().getFullYear().toString();
     const tahunAjaran = rawTahun.includes('/') ? rawTahun : `${rawTahun}/${parseInt(rawTahun, 10) + 1}`;
     
-    // Header (Kop Surat)
+    // Header (Kop Surat) and separator line
     if (safeKop) {
       try {
         const kopFormat = safeKop.includes('image/png') ? 'PNG' : 'JPEG';
         doc.addImage(safeKop, kopFormat, 20, 10, 170, 30);
-        currentY = 45;
-        doc.line(20, currentY, 190, currentY);
-        currentY += 10;
-        
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text('BUKTI KELULUSAN SPMB', 105, currentY, { align: 'center' });
-        currentY += 8;
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Tahun Ajaran ${tahunAjaran}`, 105, currentY, { align: 'center' });
-        currentY += 6;
-        if (settings?.nomorSurat) {
-          doc.setFontSize(11);
-          doc.text(`Nomor: ${settings.nomorSurat}`, 105, currentY, { align: 'center' });
-          currentY += 6;
-        }
-        currentY += 4;
       } catch (e) {
-        console.error("Error adding kop surat", e);
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text('BUKTI KELULUSAN SPMB', 105, currentY, { align: 'center' });
-        currentY += 8;
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Tahun Ajaran ${tahunAjaran}`, 105, currentY, { align: 'center' });
-        currentY += 6;
-        if (settings?.nomorSurat) {
-          doc.setFontSize(11);
-          doc.text(`Nomor: ${settings.nomorSurat}`, 105, currentY, { align: 'center' });
-          currentY += 6;
-        }
-        doc.line(20, currentY, 190, currentY);
-        currentY += 10;
+        console.error("Error adding kop surat image", e);
       }
-    } else {
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('BUKTI KELULUSAN SPMB', 105, currentY, { align: 'center' });
-      currentY += 8;
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Tahun Ajaran ${tahunAjaran}`, 105, currentY, { align: 'center' });
-      currentY += 6;
-      if (settings?.nomorSurat) {
-        doc.setFontSize(11);
-        doc.text(`Nomor: ${settings.nomorSurat}`, 105, currentY, { align: 'center' });
-        currentY += 6;
-      }
-      doc.line(20, currentY, 190, currentY);
-      currentY += 10;
     }
+    
+    // Always draw separator line at y = 45 to leave space above for kop surat
+    currentY = 45;
+    doc.line(20, currentY, 190, currentY);
+    
+    // Move below the line for the official title
+    currentY += 12;
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BUKTI KELULUSAN SPMB', 105, currentY, { align: 'center' });
+    
+    currentY += 8;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Tahun Ajaran ${tahunAjaran}`, 105, currentY, { align: 'center' });
+    
+    currentY += 6;
+    doc.setFontSize(11);
+    const nomorSurat = settings?.nomorSurat || `001/SPMB/${tahunAjaran.replace('/', '-')}`;
+    doc.text(`Nomor: ${nomorSurat}`, 105, currentY, { align: 'center' });
+    
+    currentY += 12;
     
     // Content
     doc.setFontSize(11);
