@@ -2346,12 +2346,15 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Data Section */}
                   <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold border-b pb-2 mb-4 dark:border-slate-700">Data Pendaftar</h3>
-                      <dl className="grid grid-cols-1 gap-y-3 text-sm">
+                    {/* 1. Informasi Pendaftaran */}
+                    <div className={cn("p-4 rounded-xl border", isDarkMode ? "border-slate-700 bg-slate-900/30" : "border-slate-200 bg-slate-50/50")}>
+                      <h3 className="text-base font-bold pb-2 mb-3 border-b text-blue-600 dark:text-blue-400 dark:border-slate-700">
+                        Informasi Pendaftaran
+                      </h3>
+                      <dl className="grid grid-cols-1 gap-y-2.5 text-sm">
                         <div className="grid grid-cols-3 gap-4">
                           <dt className="text-slate-500 dark:text-slate-400">No. Pendaftaran</dt>
-                          <dd className="col-span-2 font-medium">{selectedStudent['No Pendaftaran']}</dd>
+                          <dd className="col-span-2 font-semibold">{selectedStudent['No Pendaftaran']}</dd>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           <dt className="text-slate-500 dark:text-slate-400">Status</dt>
@@ -2359,33 +2362,22 @@ export default function AdminDashboard() {
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           <dt className="text-slate-500 dark:text-slate-400">Waktu Daftar</dt>
-                          <dd className="col-span-2 font-medium">{new Date(selectedStudent.Timestamp).toLocaleString()}</dd>
+                          <dd className="col-span-2 font-medium">
+                            {formatJakartaTimestamp(selectedStudent.Timestamp || selectedStudent.timestamp)}
+                          </dd>
                         </div>
                         
-                        {/* Dynamic Fields */}
-                        {settings?.formFields.filter(f => f.type !== 'file').map(field => {
-                          const value = getFieldValue(selectedStudent, field.id);
-                          return (
-                          <React.Fragment key={field.id}>
-                            <div className="grid grid-cols-3 gap-4">
-                              <dt className="text-slate-500 dark:text-slate-400">{field.label}</dt>
-                              <dd className="col-span-2 font-medium">
-                                {field.id === 'Tanggal Lahir' 
-                                  ? formatDate(value) 
-                                  : renderValue(value)}
-                              </dd>
-                            </div>
-                            {field.id === 'Tanggal Lahir' && (
-                              <div className="grid grid-cols-3 gap-4">
-                                <dt className="text-slate-500 dark:text-slate-400">Usia</dt>
-                                <dd className="col-span-2 font-medium">{calculateAge(value, settings?.tanggalCutoffUsia)}</dd>
-                              </div>
-                            )}
-                          </React.Fragment>
-                        )})}
+                        {selectedStudent['Jarak ke Sekolah (km)'] && (
+                          <div className="grid grid-cols-3 gap-4">
+                            <dt className="text-slate-500 dark:text-slate-400">Jarak ke Sekolah</dt>
+                            <dd className="col-span-2 font-semibold text-blue-600 dark:text-blue-400">
+                              {selectedStudent['Jarak ke Sekolah (km)']} km
+                            </dd>
+                          </div>
+                        )}
                         
                         {selectedStudent['Koordinat Lokasi'] && (
-                          <div className="grid grid-cols-3 gap-4 mt-2">
+                          <div className="grid grid-cols-3 gap-4">
                             <dt className="text-slate-500 dark:text-slate-400">Koordinat Lokasi</dt>
                             <dd className="col-span-2 font-medium">
                               <a 
@@ -2399,15 +2391,93 @@ export default function AdminDashboard() {
                             </dd>
                           </div>
                         )}
-                        
-                        {selectedStudent['Jarak ke Sekolah (km)'] && (
-                          <div className="grid grid-cols-3 gap-4">
-                            <dt className="text-slate-500 dark:text-slate-400">Jarak ke Sekolah</dt>
-                            <dd className="col-span-2 font-medium text-blue-700">{selectedStudent['Jarak ke Sekolah (km)']} km</dd>
+
+                        {selectedStudent['Alasan Penolakan'] && (
+                          <div className="grid grid-cols-3 gap-4 text-rose-600 dark:text-rose-400">
+                            <dt className="font-semibold">Alasan Penolakan</dt>
+                            <dd className="col-span-2 font-semibold">{selectedStudent['Alasan Penolakan']}</dd>
                           </div>
                         )}
                       </dl>
                     </div>
+
+                    {/* 2. Identitas Calon Siswa */}
+                    <div className={cn("p-4 rounded-xl border", isDarkMode ? "border-slate-700 bg-slate-900/30" : "border-slate-200 bg-slate-50/50")}>
+                      <h3 className="text-base font-bold pb-2 mb-3 border-b text-slate-800 dark:text-slate-200 dark:border-slate-700">
+                        Identitas Calon Siswa
+                      </h3>
+                      <dl className="grid grid-cols-1 gap-y-2.5 text-sm">
+                        {enrichFields(settings?.formFields || []).filter(f => f.session === 1 && f.type !== 'file').map(field => {
+                          const value = getFieldValue(selectedStudent, field.id);
+                          return (
+                            <React.Fragment key={field.id}>
+                              <div className="grid grid-cols-3 gap-4">
+                                <dt className="text-slate-500 dark:text-slate-400">{field.label}</dt>
+                                <dd className="col-span-2 font-medium">
+                                  {field.type === 'date' 
+                                    ? formatDate(value) 
+                                    : renderValue(value)}
+                                </dd>
+                              </div>
+                              {(field.id === 'Tanggal Lahir' || field.label === 'Tanggal Lahir') && (
+                                <div className="grid grid-cols-3 gap-4">
+                                  <dt className="text-slate-500 dark:text-slate-400">Usia</dt>
+                                  <dd className="col-span-2 font-medium text-emerald-600 dark:text-emerald-400">
+                                    {calculateAge(value, settings?.tanggalCutoffUsia)}
+                                  </dd>
+                                </div>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </dl>
+                    </div>
+
+                    {/* 3. Data Orang Tua Kandung */}
+                    <div className={cn("p-4 rounded-xl border", isDarkMode ? "border-slate-700 bg-slate-900/30" : "border-slate-200 bg-slate-50/50")}>
+                      <h3 className="text-base font-bold pb-2 mb-3 border-b text-slate-800 dark:text-slate-200 dark:border-slate-700">
+                        Data Orang Tua Kandung
+                      </h3>
+                      <dl className="grid grid-cols-1 gap-y-2.5 text-sm">
+                        {enrichFields(settings?.formFields || []).filter(f => f.session === 2 && f.type !== 'file').map(field => {
+                          const value = getFieldValue(selectedStudent, field.id);
+                          return (
+                            <div key={field.id} className="grid grid-cols-3 gap-4">
+                              <dt className="text-slate-500 dark:text-slate-400">{field.label}</dt>
+                              <dd className="col-span-2 font-medium">
+                                {field.type === 'date' 
+                                  ? formatDate(value) 
+                                  : renderValue(value)}
+                              </dd>
+                            </div>
+                          );
+                        })}
+                      </dl>
+                    </div>
+
+                    {/* 4. Data Wali Siswa (Opsional) */}
+                    {enrichFields(settings?.formFields || []).filter(f => f.session === 3 && f.type !== 'file').length > 0 && (
+                      <div className={cn("p-4 rounded-xl border", isDarkMode ? "border-slate-700 bg-slate-900/30" : "border-slate-200 bg-slate-50/50")}>
+                        <h3 className="text-base font-bold pb-2 mb-3 border-b text-slate-800 dark:text-slate-200 dark:border-slate-700">
+                          Data Wali Siswa (Opsional)
+                        </h3>
+                        <dl className="grid grid-cols-1 gap-y-2.5 text-sm">
+                          {enrichFields(settings?.formFields || []).filter(f => f.session === 3 && f.type !== 'file').map(field => {
+                            const value = getFieldValue(selectedStudent, field.id);
+                            return (
+                              <div key={field.id} className="grid grid-cols-3 gap-4">
+                                <dt className="text-slate-500 dark:text-slate-400">{field.label}</dt>
+                                <dd className="col-span-2 font-medium">
+                                  {field.type === 'date' 
+                                    ? formatDate(value) 
+                                    : renderValue(value)}
+                                </dd>
+                              </div>
+                            );
+                          })}
+                        </dl>
+                      </div>
+                    )}
                     
                     <div className="pt-4 flex gap-3">
                       {selectedStudent.Status !== 'Lulus' && (
