@@ -15,11 +15,6 @@ const ensureSafePdfImage = (src: string): Promise<string> => {
       resolve('');
       return;
     }
-    // If it's already a safe base64 data URI of png or jpeg (not webp), return it
-    if (src.startsWith('data:image/png') || src.startsWith('data:image/jpeg') || src.startsWith('data:image/jpg')) {
-      resolve(src);
-      return;
-    }
 
     const img = new Image();
     if (src.startsWith('http') || src.startsWith('//')) {
@@ -48,7 +43,8 @@ const ensureSafePdfImage = (src: string): Promise<string> => {
       }
     };
     img.onerror = () => {
-      resolve(src);
+      console.warn("Failed to load image in ensureSafePdfImage. Resolving to empty string to prevent PDF rendering issues.");
+      resolve('');
     };
     img.src = src;
   });

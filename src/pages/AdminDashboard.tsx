@@ -11,7 +11,13 @@ import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 
-const compressImage = (file: File, maxWidth = 800, quality = 0.55, forceFormat?: 'image/jpeg' | 'image/png'): Promise<string> => {
+const compressImage = (
+  file: File,
+  maxWidth = 800,
+  quality = 0.55,
+  forceFormat?: 'image/jpeg' | 'image/png',
+  maxBase64Length = 49000
+): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -19,51 +25,52 @@ const compressImage = (file: File, maxWidth = 800, quality = 0.55, forceFormat?:
       const img = new Image();
       img.src = event.target?.result as string;
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+        let currentWidth = img.width;
+        let currentHeight = img.height;
 
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
+        // Initial dimension calculation
+        if (currentWidth > maxWidth) {
+          currentHeight = Math.round((currentHeight * maxWidth) / currentWidth);
+          currentWidth = maxWidth;
         }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          // If format is jpeg, fill background with white to avoid black background on transparent images
-          if (forceFormat === 'image/jpeg' || (!forceFormat && file.type !== 'image/png')) {
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, width, height);
-          }
-          ctx.drawImage(img, 0, 0, width, height);
-        }
-        
-        // Use PNG for png files to preserve transparency, otherwise JPEG for high efficiency
         const type = forceFormat || (file.type === 'image/png' ? 'image/png' : 'image/jpeg');
-        let dataUrl = canvas.toDataURL(type, type === 'image/png' ? undefined : quality);
-        
-        // Iteratively downscale if the base64 string is still too large for Firestore document limits (safe limit ~250KB)
-        if (dataUrl.length > 340000) {
-          if (type === 'image/jpeg') {
-            // Lower quality for JPEG
-            dataUrl = canvas.toDataURL(type, quality * 0.6);
-          } else {
-            // Downscale width for transparent PNG
-            const scaleCanvas = document.createElement('canvas');
-            const scaleWidth = Math.min(width, 400);
-            const scaleHeight = Math.round((height * scaleWidth) / width);
-            scaleCanvas.width = scaleWidth;
-            scaleCanvas.height = scaleHeight;
-            const scaleCtx = scaleCanvas.getContext('2d');
-            if (scaleCtx) {
-              scaleCtx.drawImage(canvas, 0, 0, scaleWidth, scaleHeight);
+        let currentQuality = quality;
+        let dataUrl = '';
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        while (attempts < maxAttempts) {
+          const canvas = document.createElement('canvas');
+          canvas.width = currentWidth;
+          canvas.height = currentHeight;
+          const ctx = canvas.getContext('2d');
+
+          if (ctx) {
+            if (type === 'image/jpeg') {
+              // Fill with white to avoid black background on transparent images converted to JPEG
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, currentWidth, currentHeight);
             }
-            dataUrl = scaleCanvas.toDataURL('image/png');
+            ctx.drawImage(img, 0, 0, currentWidth, currentHeight);
+          }
+
+          dataUrl = canvas.toDataURL(type, type === 'image/png' ? undefined : currentQuality);
+
+          // If it fits within the safe Google Sheets/Firestore character limits, we can resolve
+          if (dataUrl.length <= maxBase64Length) {
+            break;
+          }
+
+          // Otherwise, downscale width and lower quality progressively
+          attempts++;
+          currentWidth = Math.round(currentWidth * 0.85);
+          currentHeight = Math.round(currentHeight * 0.85);
+          if (type === 'image/jpeg') {
+            currentQuality = Math.max(0.1, currentQuality - 0.1);
           }
         }
-        
+
         resolve(dataUrl);
       };
     };
@@ -2033,6 +2040,7 @@ export default function AdminDashboard() {
                        <div>
                         <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Kop Surat (Gambar)</label>
                         <input
+                          key={localSettings.kopSurat ? 'kop-has' : 'kop-empty'}
                           type="file"
                           accept="image/*"
                           onChange={async (e) => {
@@ -2051,12 +2059,24 @@ export default function AdminDashboard() {
                           placeholder="Atau tempel URL gambar kop surat eksternal di sini..."
                           className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                         />
-                        {localSettings.kopSurat && <img src={localSettings.kopSurat} alt="Kop Surat" className="mt-2 h-16 object-contain border rounded bg-white" />}
+                        {localSettings.kopSurat && (
+                          <div className="mt-2 flex items-center gap-3">
+                            <img src={localSettings.kopSurat} alt="Kop Surat" className="h-16 object-contain border rounded bg-white p-1" />
+                            <button
+                              type="button"
+                              onClick={() => setLocalSettings({...localSettings, kopSurat: ''})}
+                              className="px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-400 rounded-md transition-colors"
+                            >
+                              Hapus Gambar
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div>
                         <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanda Tangan Kepala Sekolah (Gambar)</label>
                         <input
+                          key={localSettings.tandaTanganKepalaSekolah ? 'ttd-has' : 'ttd-empty'}
                           type="file"
                           accept="image/*"
                           onChange={async (e) => {
@@ -2075,12 +2095,24 @@ export default function AdminDashboard() {
                           placeholder="Atau tempel URL gambar tanda tangan eksternal di sini..."
                           className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                         />
-                        {localSettings.tandaTanganKepalaSekolah && <img src={localSettings.tandaTanganKepalaSekolah} alt="Tanda Tangan" className="mt-2 h-16 object-contain border rounded bg-white" />}
+                        {localSettings.tandaTanganKepalaSekolah && (
+                          <div className="mt-2 flex items-center gap-3">
+                            <img src={localSettings.tandaTanganKepalaSekolah} alt="Tanda Tangan" className="h-16 object-contain border rounded bg-white p-1" />
+                            <button
+                              type="button"
+                              onClick={() => setLocalSettings({...localSettings, tandaTanganKepalaSekolah: ''})}
+                              className="px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-400 rounded-md transition-colors"
+                            >
+                              Hapus Gambar
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div>
                         <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Stempel Sekolah (Gambar transparan disarankan)</label>
                         <input
+                          key={localSettings.stempelSekolah ? 'stempel-has' : 'stempel-empty'}
                           type="file"
                           accept="image/*"
                           onChange={async (e) => {
@@ -2099,7 +2131,18 @@ export default function AdminDashboard() {
                           placeholder="Atau tempel URL gambar stempel eksternal di sini..."
                           className={cn("w-full mt-2 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                         />
-                        {localSettings.stempelSekolah && <img src={localSettings.stempelSekolah} alt="Stempel" className="mt-2 h-16 object-contain border rounded bg-white" />}
+                        {localSettings.stempelSekolah && (
+                          <div className="mt-2 flex items-center gap-3">
+                            <img src={localSettings.stempelSekolah} alt="Stempel" className="h-16 object-contain border rounded bg-white p-1" />
+                            <button
+                              type="button"
+                              onClick={() => setLocalSettings({...localSettings, stempelSekolah: ''})}
+                              className="px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 dark:text-red-400 rounded-md transition-colors"
+                            >
+                              Hapus Gambar
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="md:col-span-2">
