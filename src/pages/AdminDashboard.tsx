@@ -2009,7 +2009,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 500, 0.5);
+                              const compressed = await compressImage(file, 1600, 0.9);
                               setLocalSettings({...localSettings, kopSurat: compressed});
                             }
                           }}
@@ -2033,7 +2033,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 180, 0.5);
+                              const compressed = await compressImage(file, 600, 0.85);
                               setLocalSettings({...localSettings, tandaTanganKepalaSekolah: compressed});
                             }
                           }}
@@ -2057,7 +2057,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 180, 0.5);
+                              const compressed = await compressImage(file, 600, 0.85);
                               setLocalSettings({...localSettings, stempelSekolah: compressed});
                             }
                           }}

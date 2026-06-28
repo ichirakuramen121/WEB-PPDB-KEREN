@@ -203,7 +203,11 @@ export default function CheckStatus() {
     const splitReq = doc.splitTextToSize(reqText, 160);
     doc.text(splitReq, 25, currentY);
     
-    currentY += splitReq.length * 6 + 20;
+    currentY += splitReq.length * 6 + 15;
+    // Cap currentY to ensure the signature block starts at a high enough position and doesn't overlap or align with footer
+    if (currentY > 225) {
+      currentY = 225;
+    }
  
     // Signature Area
     const today = new Date();
@@ -264,9 +268,11 @@ export default function CheckStatus() {
     }
     
     // Footer
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Dicetak pada: ${dateStr}`, 20, 280);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(110, 110, 110); // Muted gray color
+    doc.text(`Dicetak pada: ${dateStr}`, 20, 287);
+    doc.setTextColor(0, 0, 0); // Reset color to black
     
     doc.save(`Bukti_Kelulusan_${data.noPendaftaran}.pdf`);
   };
