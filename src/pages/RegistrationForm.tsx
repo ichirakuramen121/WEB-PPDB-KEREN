@@ -266,11 +266,10 @@ export default function RegistrationForm() {
       if (typeof val === 'string' && val.trim().startsWith('data:')) return false;
       return true;
     });
-    
-    // Split into left and right columns
-    const half = Math.ceil(printableFields.length / 2);
-    const leftCol = printableFields.slice(0, half);
-    const rightCol = printableFields.slice(half);
+
+    const fieldsSiswa = printableFields.filter(f => getFieldSession(f) === 1);
+    const fieldsOrangTua = printableFields.filter(f => getFieldSession(f) === 2);
+    const fieldsWali = printableFields.filter(f => getFieldSession(f) === 3);
 
     // Draw Main Header sections
     doc.setFont("helvetica", "bold");
@@ -291,57 +290,98 @@ export default function RegistrationForm() {
       doc.text(`: ${distance.toFixed(2)} km`, 145, 65);
     }
 
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("DATA FORMULIR CALON SISWA", 15, 75);
-    doc.line(15, 77, 195, 77);
+    const drawSection = (title: string, sectionFields: any[], yStart: number) => {
+      if (sectionFields.length === 0) return yStart;
+      
+      // Page break check (header and line needs at least 20mm)
+      if (yStart > 250) {
+        doc.addPage();
+        yStart = 20;
+      }
 
-    doc.setFontSize(9);
-    let col1Y = 85;
-    leftCol.forEach(field => {
+      // Draw section header
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      const labelText = field.label;
-      const splitLabel = doc.splitTextToSize(labelText, 33);
-      doc.text(splitLabel, 15, col1Y);
+      doc.setTextColor(30, 41, 59); // slate-800
+      doc.text(title, 15, yStart);
+      doc.setDrawColor(200, 200, 200);
+      doc.line(15, yStart + 2, 195, yStart + 2);
       
-      doc.setFont("helvetica", "normal");
-      let value = formData[field.label] || '-';
-      if (field.type === 'date') {
-        value = formatDate(value);
-      }
-      if (typeof value === 'string' && value.trim().startsWith('data:')) {
-        value = 'Berkas Terunggah';
-      }
-      const splitVal = doc.splitTextToSize(String(value), 52);
-      doc.text(splitVal, 50, col1Y);
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
       
-      const maxRows = Math.max(splitLabel.length, splitVal.length);
-      col1Y += maxRows * 5.5 + 2;
-    });
+      const half = Math.ceil(sectionFields.length / 2);
+      const left = sectionFields.slice(0, half);
+      const right = sectionFields.slice(half);
+      
+      let col1Y = yStart + 8;
+      left.forEach(field => {
+        if (col1Y > 275) {
+          doc.addPage();
+          col1Y = 20;
+        }
+        doc.setFont("helvetica", "bold");
+        const labelText = field.label;
+        const splitLabel = doc.splitTextToSize(labelText, 33);
+        doc.text(splitLabel, 15, col1Y);
+        
+        doc.setFont("helvetica", "normal");
+        let value = formData[field.label] || '-';
+        if (field.type === 'date') {
+          value = formatDate(value);
+        }
+        if (typeof value === 'string' && value.trim().startsWith('data:')) {
+          value = 'Berkas Terunggah';
+        }
+        const splitVal = doc.splitTextToSize(String(value), 52);
+        doc.text(splitVal, 50, col1Y);
+        
+        const maxRows = Math.max(splitLabel.length, splitVal.length);
+        col1Y += maxRows * 5.5 + 2;
+      });
+      
+      let col2Y = yStart + 8;
+      right.forEach(field => {
+        if (col2Y > 275) {
+          // Keep alignment clean or draw on new page if it fits
+        }
+        doc.setFont("helvetica", "bold");
+        const labelText = field.label;
+        const splitLabel = doc.splitTextToSize(labelText, 33);
+        doc.text(splitLabel, 110, col2Y);
+        
+        doc.setFont("helvetica", "normal");
+        let value = formData[field.label] || '-';
+        if (field.type === 'date') {
+          value = formatDate(value);
+        }
+        if (typeof value === 'string' && value.trim().startsWith('data:')) {
+          value = 'Berkas Terunggah';
+        }
+        const splitVal = doc.splitTextToSize(String(value), 52);
+        doc.text(splitVal, 145, col2Y);
+        
+        const maxRows = Math.max(splitLabel.length, splitVal.length);
+        col2Y += maxRows * 5.5 + 2;
+      });
+      
+      return Math.max(col1Y, col2Y) + 5;
+    };
 
-    let col2Y = 85;
-    rightCol.forEach(field => {
-      doc.setFont("helvetica", "bold");
-      const labelText = field.label;
-      const splitLabel = doc.splitTextToSize(labelText, 33);
-      doc.text(splitLabel, 110, col2Y);
-      
-      doc.setFont("helvetica", "normal");
-      let value = formData[field.label] || '-';
-      if (field.type === 'date') {
-        value = formatDate(value);
-      }
-      if (typeof value === 'string' && value.trim().startsWith('data:')) {
-        value = 'Berkas Terunggah';
-      }
-      const splitVal = doc.splitTextToSize(String(value), 52);
-      doc.text(splitVal, 145, col2Y);
-      
-      const maxRows = Math.max(splitLabel.length, splitVal.length);
-      col2Y += maxRows * 5.5 + 2;
-    });
+    let currentY = 75;
+    currentY = drawSection("DATA FORMULIR CALON SISWA", fieldsSiswa, currentY);
+    currentY = drawSection("DATA ORANG TUA KANDUNG", fieldsOrangTua, currentY);
+    currentY = drawSection("DATA WALI SISWA (OPSIONAL)", fieldsWali, currentY);
 
-    const bottomY = 245;
+    // Dynamic placement of footer
+    let bottomY = currentY + 5;
+    if (bottomY > 240) {
+      doc.addPage();
+      bottomY = 20;
+    } else {
+      bottomY = Math.max(bottomY, 240);
+    }
+
     doc.setDrawColor(200, 200, 200);
     doc.line(15, bottomY, 195, bottomY);
     

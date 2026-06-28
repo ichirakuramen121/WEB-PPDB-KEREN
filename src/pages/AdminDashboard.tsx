@@ -581,7 +581,7 @@ export default function AdminDashboard() {
       // 6. Upload Berkas (Session 4 or any type 'file')
       enriched.filter((f: any) => f.session === 4 || f.type === 'file').forEach((field: any) => {
         const value = getFieldValue(item, field.id);
-        formattedItem[field.label] = isFileUploaded(value) ? 'Tersedia' : 'Tidak Ada';
+        formattedItem[field.label] = isFileUploaded(value) ? value : 'Tidak Ada';
       });
       
       // 7. Alasan Penolakan
@@ -614,10 +614,12 @@ export default function AdminDashboard() {
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(11);
     
-    const printableFields = (settings?.formFields || []).filter(field => field.type !== 'file');
-    const half = Math.ceil(printableFields.length / 2);
-    const leftCol = printableFields.slice(0, half);
-    const rightCol = printableFields.slice(half);
+    const enriched = enrichFields(settings?.formFields || []);
+    const printableFields = enriched.filter(field => field.type !== 'file');
+    
+    const fieldsSiswa = printableFields.filter(f => f.session === 1);
+    const fieldsOrangTua = printableFields.filter(f => f.session === 2);
+    const fieldsWali = printableFields.filter(f => f.session === 3);
 
     // Draw Main Header sections
     doc.setFont("helvetica", "bold");
@@ -636,51 +638,89 @@ export default function AdminDashboard() {
     doc.setFont("helvetica", "normal");
     doc.text(`: ${student.Status}`, 145, 65);
 
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("DATA FORMULIR SISWA", 15, 75);
-    doc.line(15, 77, 195, 77);
-
-    doc.setFontSize(9);
-    let col1Y = 85;
-    leftCol.forEach(field => {
-      doc.setFont("helvetica", "bold");
-      const labelText = field.label;
-      const splitLabel = doc.splitTextToSize(labelText, 33);
-      doc.text(splitLabel, 15, col1Y);
+    const drawSection = (title: string, sectionFields: any[], yStart: number) => {
+      if (sectionFields.length === 0) return yStart;
       
-      doc.setFont("helvetica", "normal");
-      let value = student[field.label] || '-';
-      if (field.type === 'date') {
-        value = formatDate(value);
+      // Page break check (header and line needs at least 20mm)
+      if (yStart > 250) {
+        doc.addPage();
+        yStart = 20;
       }
-      const splitVal = doc.splitTextToSize(String(value), 52);
-      doc.text(splitVal, 50, col1Y);
-      
-      const maxRows = Math.max(splitLabel.length, splitVal.length);
-      col1Y += maxRows * 5.5 + 2;
-    });
 
-    let col2Y = 85;
-    rightCol.forEach(field => {
+      // Draw section header
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      const labelText = field.label;
-      const splitLabel = doc.splitTextToSize(labelText, 33);
-      doc.text(splitLabel, 110, col2Y);
+      doc.setTextColor(30, 41, 59); // slate-800
+      doc.text(title, 15, yStart);
+      doc.setDrawColor(200, 200, 200);
+      doc.line(15, yStart + 2, 195, yStart + 2);
       
-      doc.setFont("helvetica", "normal");
-      let value = student[field.label] || '-';
-      if (field.type === 'date') {
-        value = formatDate(value);
-      }
-      const splitVal = doc.splitTextToSize(String(value), 52);
-      doc.text(splitVal, 145, col2Y);
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
       
-      const maxRows = Math.max(splitLabel.length, splitVal.length);
-      col2Y += maxRows * 5.5 + 2;
-    });
+      const half = Math.ceil(sectionFields.length / 2);
+      const left = sectionFields.slice(0, half);
+      const right = sectionFields.slice(half);
+      
+      let col1Y = yStart + 8;
+      left.forEach(field => {
+        if (col1Y > 275) {
+          doc.addPage();
+          col1Y = 20;
+        }
+        doc.setFont("helvetica", "bold");
+        const labelText = field.label;
+        const splitLabel = doc.splitTextToSize(labelText, 33);
+        doc.text(splitLabel, 15, col1Y);
+        
+        doc.setFont("helvetica", "normal");
+        let value = getFieldValue(student, field.id) || '-';
+        if (field.type === 'date') {
+          value = formatDate(value);
+        }
+        const splitVal = doc.splitTextToSize(String(value), 52);
+        doc.text(splitVal, 50, col1Y);
+        
+        const maxRows = Math.max(splitLabel.length, splitVal.length);
+        col1Y += maxRows * 5.5 + 2;
+      });
+      
+      let col2Y = yStart + 8;
+      right.forEach(field => {
+        doc.setFont("helvetica", "bold");
+        const labelText = field.label;
+        const splitLabel = doc.splitTextToSize(labelText, 33);
+        doc.text(splitLabel, 110, col2Y);
+        
+        doc.setFont("helvetica", "normal");
+        let value = getFieldValue(student, field.id) || '-';
+        if (field.type === 'date') {
+          value = formatDate(value);
+        }
+        const splitVal = doc.splitTextToSize(String(value), 52);
+        doc.text(splitVal, 145, col2Y);
+        
+        const maxRows = Math.max(splitLabel.length, splitVal.length);
+        col2Y += maxRows * 5.5 + 2;
+      });
+      
+      return Math.max(col1Y, col2Y) + 5;
+    };
 
-    const bottomY = 245;
+    let currentY = 75;
+    currentY = drawSection("DATA FORMULIR CALON SISWA", fieldsSiswa, currentY);
+    currentY = drawSection("DATA ORANG TUA KANDUNG", fieldsOrangTua, currentY);
+    currentY = drawSection("DATA WALI SISWA (OPSIONAL)", fieldsWali, currentY);
+
+    // Dynamic placement of footer
+    let bottomY = currentY + 5;
+    if (bottomY > 240) {
+      doc.addPage();
+      bottomY = 20;
+    } else {
+      bottomY = Math.max(bottomY, 240);
+    }
+
     doc.setDrawColor(200, 200, 200);
     doc.line(15, bottomY, 195, bottomY);
     
