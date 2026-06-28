@@ -41,8 +41,15 @@ const compressImage = (file: File, maxWidth = 800, quality = 0.55): Promise<stri
   });
 };
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: any) => {
   if (!dateString) return '-';
+  if (typeof dateString !== 'string') {
+    try {
+      return JSON.stringify(dateString);
+    } catch (e) {
+      return String(dateString);
+    }
+  }
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString;
   const day = String(date.getDate()).padStart(2, '0');
@@ -51,14 +58,16 @@ const formatDate = (dateString: string) => {
   return `${day}/${month}/${year}`;
 };
 
-const calculateAge = (dateString: string, cutoffDateString?: string) => {
+const calculateAge = (dateString: any, cutoffDateString?: any) => {
   if (!dateString) return '-';
-  const birthDate = new Date(dateString);
+  const strVal = typeof dateString === 'string' ? dateString : String(dateString);
+  const birthDate = new Date(strVal);
   if (isNaN(birthDate.getTime())) return '-';
   
   let today = new Date();
   if (cutoffDateString) {
-    const cutoff = new Date(cutoffDateString);
+    const cutStrVal = typeof cutoffDateString === 'string' ? cutoffDateString : String(cutoffDateString);
+    const cutoff = new Date(cutStrVal);
     if (!isNaN(cutoff.getTime())) {
       today = cutoff;
     }
@@ -80,6 +89,24 @@ const calculateAge = (dateString: string, cutoffDateString?: string) => {
   }
   
   return `${years} Tahun ${months} Bulan ${days} Hari`;
+};
+
+const renderValue = (val: any) => {
+  if (val === undefined || val === null) return '-';
+  if (typeof val === 'object') {
+    if (Array.isArray(val)) {
+      return val.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ');
+    }
+    try {
+      return JSON.stringify(val);
+    } catch (e) {
+      return String(val);
+    }
+  }
+  if (typeof val === 'boolean') {
+    return val ? 'Ya' : 'Tidak';
+  }
+  return String(val);
 };
 
 const enrichFields = (fields: any[]): any[] => {
@@ -2204,7 +2231,7 @@ export default function AdminDashboard() {
                               <dd className="col-span-2 font-medium">
                                 {field.id === 'Tanggal Lahir' 
                                   ? formatDate(value) 
-                                  : (value || '-')}
+                                  : renderValue(value)}
                               </dd>
                             </div>
                             {field.id === 'Tanggal Lahir' && (
@@ -2272,10 +2299,10 @@ export default function AdminDashboard() {
                           <div key={field.id} className={cn("p-4 rounded-xl border", isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50")}>
                             <p className="text-sm font-medium mb-2">{field.label}</p>
                             {fileUrl ? (
-                              fileUrl.startsWith('data:image') ? (
+                              (typeof fileUrl === 'string' && fileUrl.startsWith('data:image')) ? (
                                 <img src={fileUrl} alt={field.label} className="w-full h-32 object-cover rounded-lg border" />
                               ) : (
-                                <a href={fileUrl} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-sm flex items-center gap-2">
+                                <a href={String(fileUrl)} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline text-sm flex items-center gap-2">
                                   <FileText size={16} /> Buka {field.label}
                                 </a>
                               )
