@@ -116,6 +116,35 @@ const isFileUploaded = (url: any): boolean => {
   return trimmed.startsWith('data:') || trimmed.startsWith('http://') || trimmed.startsWith('https://');
 };
 
+const formatJakartaTimestamp = (timestampString: any) => {
+  if (!timestampString) return '-';
+  try {
+    const date = new Date(timestampString);
+    if (isNaN(date.getTime())) return String(timestampString);
+    
+    const formatter = new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
+    const parts = formatter.formatToParts(date);
+    const partMap: any = {};
+    parts.forEach(p => {
+      partMap[p.type] = p.value;
+    });
+    
+    return `${partMap.day}/${partMap.month}/${partMap.year} ${partMap.hour}:${partMap.minute}:${partMap.second} WIB`;
+  } catch (e) {
+    return String(timestampString);
+  }
+};
+
 const enrichFields = (fields: any[]): any[] => {
   return (fields || []).map((field, idx) => {
     let session = field.session;
@@ -508,23 +537,40 @@ export default function AdminDashboard() {
 
   const exportToExcel = () => {
     const exportData = data.map(item => {
-      const formattedItem: any = { ...item };
+      const formattedItem: any = {};
       
-      const tglLahir = getFieldValue(item, 'Tanggal Lahir');
-      if (tglLahir) {
-        formattedItem['Tanggal Lahir'] = formatDate(tglLahir);
-        formattedItem['Usia'] = calculateAge(tglLahir, settings?.tanggalCutoffUsia);
+      // 1. Core fields first
+      formattedItem['No Pendaftaran'] = item['No Pendaftaran'] || '-';
+      formattedItem['Waktu Pendaftaran (WIB)'] = formatJakartaTimestamp(item.Timestamp || item.timestamp);
+      formattedItem['Status Kelulusan'] = item.Status || 'Proses';
+      
+      // 2. Form fields in order of setting configuration
+      if (settings?.formFields) {
+        settings.formFields.forEach((field: any) => {
+          const value = getFieldValue(item, field.id);
+          
+          if (field.type === 'file') {
+            formattedItem[field.label] = isFileUploaded(value) ? 'Tersedia' : 'Tidak Ada';
+          } else if (field.id === 'Tanggal Lahir' || field.label === 'Tanggal Lahir') {
+            formattedItem[field.label] = formatDate(value);
+            formattedItem['Usia'] = calculateAge(value, settings?.tanggalCutoffUsia);
+          } else {
+            formattedItem[field.label] = renderValue(value);
+          }
+        });
       }
       
+      // 3. Distance and map link fields
+      if (item['Jarak ke Sekolah (km)'] !== undefined) {
+        formattedItem['Jarak ke Sekolah (km)'] = item['Jarak ke Sekolah (km)'];
+      }
       if (item['Koordinat Lokasi']) {
+        formattedItem['Koordinat Lokasi'] = item['Koordinat Lokasi'];
         formattedItem['Link Maps'] = `https://www.google.com/maps/search/?api=1&query=${item['Koordinat Lokasi']}`;
       }
       
-      Object.keys(formattedItem).forEach(key => {
-        if (typeof formattedItem[key] === 'string' && formattedItem[key].startsWith('data:')) {
-          formattedItem[key] = 'File Terlampir (Lihat di Dashboard)';
-        }
-      });
+      // 4. Rejection reason
+      formattedItem['Alasan Penolakan'] = item['Alasan Penolakan'] || '-';
       
       return formattedItem;
     });
