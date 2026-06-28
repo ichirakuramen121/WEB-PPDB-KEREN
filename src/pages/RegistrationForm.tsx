@@ -430,6 +430,8 @@ export default function RegistrationForm() {
       idLower.includes('ortu') || labelLower.includes('ortu') ||
       idLower.includes('bapak') || labelLower.includes('bapak') ||
       idLower.includes('ibu') || labelLower.includes('ibu') ||
+      idLower.includes('ayah') || labelLower.includes('ayah') ||
+      idLower.includes('mama') || labelLower.includes('mama') ||
       idLower.includes('hp') || labelLower.includes('hp') ||
       idLower.includes('telepon') || labelLower.includes('telepon') ||
       idLower.includes('whatsapp') || labelLower.includes('whatsapp')

@@ -161,6 +161,8 @@ const enrichFields = (fields: any[]): any[] => {
           idLower.includes('ortu') || labelLower.includes('ortu') ||
           idLower.includes('bapak') || labelLower.includes('bapak') ||
           idLower.includes('ibu') || labelLower.includes('ibu') ||
+          idLower.includes('ayah') || labelLower.includes('ayah') ||
+          idLower.includes('mama') || labelLower.includes('mama') ||
           idLower.includes('hp') || labelLower.includes('hp') ||
           idLower.includes('telepon') || labelLower.includes('telepon') ||
           idLower.includes('whatsapp') || labelLower.includes('whatsapp')
@@ -581,7 +583,11 @@ export default function AdminDashboard() {
       // 6. Upload Berkas (Session 4 or any type 'file')
       enriched.filter((f: any) => f.session === 4 || f.type === 'file').forEach((field: any) => {
         const value = getFieldValue(item, field.id);
-        formattedItem[field.label] = isFileUploaded(value) ? value : 'Tidak Ada';
+        const hasCollision = enriched.some((other: any) => other.id !== field.id && other.label === field.label && other.type !== 'file');
+        const headerName = (hasCollision || field.label === 'NISN') 
+          ? `${field.label} (Berkas)` 
+          : field.label;
+        formattedItem[headerName] = isFileUploaded(value) ? value : 'Tidak Ada';
       });
       
       // 7. Alasan Penolakan
