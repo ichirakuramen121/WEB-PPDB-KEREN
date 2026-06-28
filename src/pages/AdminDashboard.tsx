@@ -11,7 +11,7 @@ import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 
-const compressImage = (file: File, maxWidth = 800, quality = 0.55): Promise<string> => {
+const compressImage = (file: File, maxWidth = 800, quality = 0.55, forceFormat?: 'image/jpeg' | 'image/png'): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -31,11 +31,40 @@ const compressImage = (file: File, maxWidth = 800, quality = 0.55): Promise<stri
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
+        if (ctx) {
+          // If format is jpeg, fill background with white to avoid black background on transparent images
+          if (forceFormat === 'image/jpeg' || (!forceFormat && file.type !== 'image/png')) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+        }
         
-        // Use webp for PNG/WebP files to keep transparency, and jpeg for the rest
-        const type = file.type === 'image/png' || file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
-        resolve(canvas.toDataURL(type, quality));
+        // Use PNG for png files to preserve transparency, otherwise JPEG for high efficiency
+        const type = forceFormat || (file.type === 'image/png' ? 'image/png' : 'image/jpeg');
+        let dataUrl = canvas.toDataURL(type, type === 'image/png' ? undefined : quality);
+        
+        // Iteratively downscale if the base64 string is still too large for Firestore document limits (safe limit ~250KB)
+        if (dataUrl.length > 340000) {
+          if (type === 'image/jpeg') {
+            // Lower quality for JPEG
+            dataUrl = canvas.toDataURL(type, quality * 0.6);
+          } else {
+            // Downscale width for transparent PNG
+            const scaleCanvas = document.createElement('canvas');
+            const scaleWidth = Math.min(width, 400);
+            const scaleHeight = Math.round((height * scaleWidth) / width);
+            scaleCanvas.width = scaleWidth;
+            scaleCanvas.height = scaleHeight;
+            const scaleCtx = scaleCanvas.getContext('2d');
+            if (scaleCtx) {
+              scaleCtx.drawImage(canvas, 0, 0, scaleWidth, scaleHeight);
+            }
+            dataUrl = scaleCanvas.toDataURL('image/png');
+          }
+        }
+        
+        resolve(dataUrl);
       };
     };
   });
@@ -2009,7 +2038,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 1600, 0.9);
+                              const compressed = await compressImage(file, 1600, 0.85, 'image/jpeg');
                               setLocalSettings({...localSettings, kopSurat: compressed});
                             }
                           }}
@@ -2033,7 +2062,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 600, 0.85);
+                              const compressed = await compressImage(file, 600, 0.8, 'image/png');
                               setLocalSettings({...localSettings, tandaTanganKepalaSekolah: compressed});
                             }
                           }}
@@ -2057,7 +2086,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImage(file, 600, 0.85);
+                              const compressed = await compressImage(file, 600, 0.8, 'image/png');
                               setLocalSettings({...localSettings, stempelSekolah: compressed});
                             }
                           }}
