@@ -325,7 +325,7 @@ export const getSettings = async (): Promise<AppSettings> => {
       localData = result.data;
     }
   } catch (e) {
-    console.error("Failed to fetch settings from Express API", e);
+    console.warn("Failed to fetch settings from Express API (using mock offline fallback instead):", e);
   }
 
   const baseSettings = { ...defaults, ...(localData || mockSettings) };
@@ -367,10 +367,10 @@ export const getSettings = async (): Promise<AppSettings> => {
     }
     throw new Error(result.message);
   } catch (error) {
-    console.error("Error fetching settings from GAS:", error);
+    console.warn("Could not fetch settings from GAS (using local/cached settings fallback):", error);
     return baseSettings;
   }
-};
+}
 
 export const updateSettings = async (settings: Partial<AppSettings>) => {
   // Always synchronize changes to local Express API immediately
@@ -381,7 +381,7 @@ export const updateSettings = async (settings: Partial<AppSettings>) => {
       body: JSON.stringify(settings)
     });
   } catch (e) {
-    console.error("Failed to update settings in Express API background", e);
+    console.warn("Failed to update settings in Express API background:", e);
   }
   saveMockSettings({ ...mockSettings, ...settings });
 
@@ -412,7 +412,7 @@ export const updateSettings = async (settings: Partial<AppSettings>) => {
     });
     return await response.json();
   } catch (error) {
-    console.error("Error updating settings:", error);
+    console.warn("Error updating settings on GAS backend:", error);
     throw error;
   }
 };
@@ -430,7 +430,7 @@ export const submitRegistration = async (data: RegistrationData) => {
         return result;
       }
     } catch (e) {
-      console.error("Failed to submit registration to Express API", e);
+      console.warn("Failed to submit registration to Express API (using mock fallback):", e);
     }
     
     // In-memory local fallback if Express API is offline or not responsive
@@ -489,7 +489,7 @@ export const submitRegistration = async (data: RegistrationData) => {
     });
     return await response.json();
   } catch (error) {
-    console.error("Error submitting registration:", error);
+    console.warn("Error submitting registration to GAS backend:", error);
     throw error;
   }
 };
@@ -503,7 +503,7 @@ export const getRegistrations = async (): Promise<AdminData[]> => {
         return result.data;
       }
     } catch (e) {
-      console.error("Failed to fetch registrations from Express API", e);
+      console.warn("Failed to fetch registrations from Express API (using mock fallback):", e);
     }
     return [...mockData];
   }
@@ -516,7 +516,7 @@ export const getRegistrations = async (): Promise<AdminData[]> => {
     }
     throw new Error(result.message);
   } catch (error) {
-    console.error("Error fetching registrations:", error);
+    console.warn("Error fetching registrations from GAS backend:", error);
     throw error;
   }
 };
@@ -534,7 +534,7 @@ export const updateStatus = async (noPendaftaran: string, newStatus: string, ala
         return result;
       }
     } catch (e) {
-      console.error("Failed to update status in Express API", e);
+      console.warn("Failed to update status in Express API (using mock fallback):", e);
     }
     const index = mockData.findIndex(d => d['No Pendaftaran'] === noPendaftaran);
     if (index !== -1) {
@@ -564,7 +564,7 @@ export const updateStatus = async (noPendaftaran: string, newStatus: string, ala
     });
     return await response.json();
   } catch (error) {
-    console.error("Error updating status:", error);
+    console.warn("Error updating status on GAS backend:", error);
     throw error;
   }
 };
@@ -582,7 +582,7 @@ export const checkStatus = async (noPendaftaran: string) => {
         return result;
       }
     } catch (e) {
-      console.error("Failed to check status in Express API", e);
+      console.warn("Failed to check status in Express API (using mock fallback):", e);
     }
     const student = mockData.find(d => d['No Pendaftaran'] === noPendaftaran);
     if (student) {
@@ -613,7 +613,7 @@ export const checkStatus = async (noPendaftaran: string) => {
     });
     return await response.json();
   } catch (error) {
-    console.error("Error checking status:", error);
+    console.warn("Error checking status on GAS backend:", error);
     throw error;
   }
 };
@@ -631,7 +631,7 @@ export const loginAdmin = async (username: string, password: string) => {
         return result;
       }
     } catch (e) {
-      console.error("Failed to login in Express API", e);
+      console.warn("Failed to login in Express API (using mock fallback):", e);
     }
     if (username === 'admin' && password === 'ajayhungkul') {
       return { status: "success" };
@@ -653,7 +653,7 @@ export const loginAdmin = async (username: string, password: string) => {
     });
     return await response.json();
   } catch (error) {
-    console.error("Error logging in:", error);
+    console.warn("Error logging in on GAS backend:", error);
     throw error;
   }
 };
@@ -669,7 +669,7 @@ export const deleteRegistration = async (noPendaftaran: string) => {
         return result;
       }
     } catch (e) {
-      console.error("Failed to delete registration in Express API", e);
+      console.warn("Failed to delete registration in Express API (using mock fallback):", e);
     }
     const index = mockData.findIndex(d => d['No Pendaftaran'] === noPendaftaran);
     if (index !== -1) {
@@ -694,7 +694,7 @@ export const deleteRegistration = async (noPendaftaran: string) => {
     });
     return await response.json();
   } catch (error) {
-    console.error("Error deleting registration:", error);
+    console.warn("Error deleting registration on GAS backend:", error);
     throw error;
   }
 };

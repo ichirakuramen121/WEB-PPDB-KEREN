@@ -9,10 +9,16 @@ import 'jspdf-autotable';
 import Swal from 'sweetalert2';
 import { useSettings } from '../context/SettingsContext';
 
-const ensureSafePdfImage = (src: string): Promise<string> => {
+interface SafeImageResult {
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
+const ensureSafePdfImage = (src: string): Promise<SafeImageResult> => {
   return new Promise((resolve) => {
     if (!src) {
-      resolve('');
+      resolve({ dataUrl: '', width: 0, height: 0 });
       return;
     }
 
@@ -27,7 +33,7 @@ const ensureSafePdfImage = (src: string): Promise<string> => {
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          resolve(src);
+          resolve({ dataUrl: src, width: img.width, height: img.height });
           return;
         }
         ctx.drawImage(img, 0, 0);
@@ -36,15 +42,19 @@ const ensureSafePdfImage = (src: string): Promise<string> => {
         const isPng = src.includes('image/png') || src.endsWith('.png') || src.includes('stempel') || src.includes('tandaTangan') || src.includes('tanda_tangan');
         const format = isPng ? 'image/png' : 'image/jpeg';
         
-        resolve(canvas.toDataURL(format, 0.95));
+        resolve({
+          dataUrl: canvas.toDataURL(format, 0.95),
+          width: img.width,
+          height: img.height
+        });
       } catch (err) {
         console.error("Failed to convert image via canvas", err);
-        resolve(src);
+        resolve({ dataUrl: src, width: img.width, height: img.height });
       }
     };
     img.onerror = () => {
       console.warn("Failed to load image in ensureSafePdfImage. Resolving to empty string to prevent PDF rendering issues.");
-      resolve('');
+      resolve({ dataUrl: '', width: 0, height: 0 });
     };
     img.src = src;
   });
@@ -101,9 +111,9 @@ export default function CheckStatus() {
       console.warn("Swal loading not triggered", err);
     }
 
-    let safeKop = '';
-    let safeStempel = '';
-    let safeTtd = '';
+    let safeKop: SafeImageResult | null = null;
+    let safeStempel: SafeImageResult | null = null;
+    let safeTtd: SafeImageResult | null = null;
 
     try {
       if (settings?.kopSurat) {
@@ -131,18 +141,28 @@ export default function CheckStatus() {
     const rawTahun = settings?.tahunPendaftaran || new Date().getFullYear().toString();
     const tahunAjaran = rawTahun.includes('/') ? rawTahun : `${rawTahun}/${parseInt(rawTahun, 10) + 1}`;
     
-    // Header (Kop Surat) and separator line
-    if (safeKop) {
+    // Header (Kop Surat) with dynamic height to prevent "gepeng" (stretched/squished) look
+    // and starting closer to the top (y = 5) for a tighter, neater appearance.
+    let kopHeight = 30;
+    if (safeKop && safeKop.dataUrl) {
       try {
-        const kopFormat = safeKop.includes('image/png') ? 'PNG' : 'JPEG';
-        doc.addImage(safeKop, kopFormat, 20, 10, 170, 30);
+        const kopFormat = safeKop.dataUrl.includes('image/png') ? 'PNG' : 'JPEG';
+        if (safeKop.width > 0 && safeKop.height > 0) {
+          const aspectRatio = safeKop.width / safeKop.height;
+          kopHeight = 170 / aspectRatio;
+          // Limit max height to avoid push down of layout
+          if (kopHeight > 38) {
+            kopHeight = 38;
+          }
+        }
+        doc.addImage(safeKop.dataUrl, kopFormat, 20, 5, 170, kopHeight);
       } catch (e) {
         console.error("Error adding kop surat image", e);
       }
     }
     
-    // Always draw separator line at y = 45 to leave space above for kop surat
-    currentY = 45;
+    // Draw separator line closer to the Kop Surat
+    currentY = 5 + kopHeight + 3;
     doc.line(20, currentY, 190, currentY);
     
     // Move below the line for the official title
@@ -214,10 +234,10 @@ export default function CheckStatus() {
     doc.text(`${tempat}, ${tanggal}`, 140, currentY);
     doc.text('Kepala Sekolah', 140, currentY + 6);
     
-    if (safeStempel) {
+    if (safeStempel && safeStempel.dataUrl) {
       try {
-        const stempelFormat = safeStempel.includes('image/png') ? 'PNG' : 'JPEG';
-        doc.addImage(safeStempel, stempelFormat, 120, currentY + 8, 30, 30);
+        const stempelFormat = safeStempel.dataUrl.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(safeStempel.dataUrl, stempelFormat, 120, currentY + 8, 30, 30);
       } catch (e) {
         console.error("Error adding stempel", e);
       }
