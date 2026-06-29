@@ -337,12 +337,20 @@ export default function AdminDashboard() {
     
     // Cleanup NISN value to show only numbers only if it is not a file field
     const isNisn = String(fieldId).toUpperCase().includes('NISN') || (field && String(field.label || '').toUpperCase().includes('NISN'));
-    if (isNisn && field && field.type !== 'file' && val !== undefined && val !== null) {
-      const stringVal = String(val).trim();
-      if (stringVal.startsWith('data:') || stringVal.startsWith('http') || stringVal.includes('/') || stringVal.includes(':') || stringVal.includes('\\')) {
-        return ''; // empty Google Drive links, file paths or base64 data
+    if (isNisn) {
+      if (val === undefined || val === null || val === '') {
+        const nisnKey = Object.keys(item || {}).find(k => k.toUpperCase().includes('NISN'));
+        if (nisnKey) {
+          val = item[nisnKey];
+        }
       }
-      return stringVal.replace(/\D/g, ''); // leave only digits
+      if (field && field.type !== 'file' && val !== undefined && val !== null) {
+        const stringVal = String(val).trim();
+        if (stringVal.startsWith('data:') || stringVal.startsWith('http') || stringVal.includes('/') || stringVal.includes(':') || stringVal.includes('\\')) {
+          return ''; // empty Google Drive links, file paths or base64 data
+        }
+        return stringVal.replace(/\D/g, ''); // leave only digits
+      }
     }
     
     return val;
@@ -2527,7 +2535,18 @@ export default function AdminDashboard() {
                         Identitas Calon Siswa
                       </h3>
                       <dl className="grid grid-cols-1 gap-y-2.5 text-sm">
-                        {enrichFields(settings?.formFields || []).filter(f => f.session === 1 && f.type !== 'file').map(field => {
+                        {(() => {
+                          const enriched = enrichFields(settings?.formFields || []);
+                          const siswaFields = enriched.filter(f => f.session === 1 && f.type !== 'file');
+                          const hasNisn = siswaFields.some(f => String(f.label || '').toUpperCase().includes('NISN'));
+                          if (!hasNisn) {
+                            const otherNisnField = enriched.find(f => String(f.label || '').toUpperCase().includes('NISN'));
+                            if (otherNisnField) {
+                              return [...siswaFields, otherNisnField];
+                            }
+                          }
+                          return siswaFields;
+                        })().map(field => {
                           const value = getFieldValue(selectedStudent, field.id);
                           return (
                             <React.Fragment key={field.id}>

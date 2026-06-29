@@ -33,6 +33,21 @@ export default function RegistrationForm() {
   const { settings } = useSettings();
   
   const renderVerificationValue = (val: any, field?: any) => {
+    const isNisn = field && (String(field.label || '').toUpperCase().includes('NISN') || String(field.id || '').toUpperCase().includes('NISN'));
+    if (isNisn) {
+      let nisnVal = val;
+      if (val === undefined || val === null || val === '') {
+        const nisnKey = Object.keys(formData || {}).find(k => k.toUpperCase().includes('NISN'));
+        if (nisnKey) {
+          nisnVal = formData[nisnKey];
+        }
+      }
+      if (nisnVal === undefined || nisnVal === null || nisnVal === '') return '-';
+      const stringVal = String(nisnVal).trim();
+      const digitsOnly = stringVal.replace(/\D/g, '');
+      return digitsOnly || '-';
+    }
+
     if (val === undefined || val === null || val === '') return '-';
     
     if (field && field.type === 'file') {
@@ -40,13 +55,6 @@ export default function RegistrationForm() {
     }
     if (typeof val === 'string' && val.trim().startsWith('data:')) {
       return '-';
-    }
-
-    const isNisn = field && (String(field.label || '').toUpperCase().includes('NISN') || String(field.id || '').toUpperCase().includes('NISN'));
-    if (isNisn) {
-      const stringVal = String(val).trim();
-      const digitsOnly = stringVal.replace(/\D/g, '');
-      return digitsOnly || '-';
     }
 
     return String(val);
@@ -1240,7 +1248,17 @@ export default function RegistrationForm() {
                           Informasi Calon Murid
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3.5 gap-x-6 text-sm">
-                          {getFieldsForSummary().filter(f => getFieldSession(f) === 1 && f.type !== 'file').map(field => (
+                          {(() => {
+                            const siswaFields = getFieldsForSummary().filter(f => getFieldSession(f) === 1 && f.type !== 'file');
+                            const hasNisn = siswaFields.some(f => String(f.label || '').toUpperCase().includes('NISN'));
+                            if (!hasNisn) {
+                              const otherNisnField = getFieldsForSummary().find(f => String(f.label || '').toUpperCase().includes('NISN'));
+                              if (otherNisnField) {
+                                return [...siswaFields, otherNisnField];
+                              }
+                            }
+                            return siswaFields;
+                          })().map(field => (
                             <div key={field.id} className="flex flex-col">
                               <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{field.label}</span>
                               <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[field.label], field)}</span>
