@@ -29,11 +29,35 @@ import jsPDF from 'jspdf';
 import MapPicker from '../components/MapPicker';
 import { calculateDistance } from '../utils/distance';
 
+const overrideNisnField = (field: any) => {
+  if (!field) return field;
+  const isNisn = String(field.label || '').toUpperCase().includes('NISN') || String(field.id || '').toUpperCase().includes('NISN');
+  if (isNisn) {
+    return {
+      ...field,
+      type: 'text',
+      required: false // "JIKA TIDAK MENGINPUT KOSONGKAN SAJA"
+    };
+  }
+  return field;
+};
+
 export default function RegistrationForm() {
   const { settings } = useSettings();
   
   const renderVerificationValue = (val: any, field?: any) => {
     if (val === undefined || val === null || val === '') return '-';
+    
+    const isNisn = field && (String(field.label || '').toUpperCase().includes('NISN') || String(field.id || '').toUpperCase().includes('NISN'));
+    if (isNisn) {
+      const stringVal = String(val).trim();
+      if (stringVal.startsWith('data:') || stringVal.startsWith('http') || stringVal.includes('/') || stringVal.includes(':') || stringVal.includes('\\')) {
+        return '-';
+      }
+      const digitsOnly = stringVal.replace(/\D/g, '');
+      return digitsOnly || '-';
+    }
+
     if (field && field.type === 'file') {
       return 'Berkas Terunggah';
     }
@@ -56,16 +80,24 @@ export default function RegistrationForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAgreed, setIsAgreed] = useState(false);
-  const [formData, setFormData] = useState<RegistrationData>(() => {
+   const [formData, setFormData] = useState<RegistrationData>(() => {
     if (localStorage.getItem('has_registered') === 'true' || document.cookie.includes('has_registered=true')) {
       return {};
     }
-    const cached = localStorage.getItem('registration_form_data');
-    return cached ? JSON.parse(cached) : {};
+    try {
+      const cached = localStorage.getItem('registration_form_data');
+      return cached ? (JSON.parse(cached) || {}) : {};
+    } catch (e) {
+      return {};
+    }
   });
   const [previews, setPreviews] = useState<Record<string, string>>(() => {
-    const cached = localStorage.getItem('registration_form_previews');
-    return cached ? JSON.parse(cached) : {};
+    try {
+      const cached = localStorage.getItem('registration_form_previews');
+      return cached ? (JSON.parse(cached) || {}) : {};
+    } catch (e) {
+      return {};
+    }
   });
   const [mapLocation, setMapLocation] = useState<{lat: number, lng: number} | null>(() => {
     const cached = localStorage.getItem('registration_form_location');
@@ -448,11 +480,11 @@ export default function RegistrationForm() {
   };
 
   const getFieldsForStep = (stepNum: number) => {
-    return (settings?.formFields || []).filter(field => getFieldSession(field) === stepNum);
+    return (settings?.formFields || []).map(overrideNisnField).filter(field => getFieldSession(field) === stepNum);
   };
 
   const getFieldsForSummary = () => {
-    return settings?.formFields || [];
+    return (settings?.formFields || []).map(overrideNisnField);
   };
 
   const handleNextStep = () => {
@@ -810,9 +842,9 @@ export default function RegistrationForm() {
               onChange={(e) => handleFileChange(e, field.label)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
-            {previews[field.label] ? (
+            {previews && previews[field.label] ? (
               <div className="absolute inset-0 z-0">
-                {previews[field.label].startsWith('data:image') ? (
+                {(typeof previews[field.label] === 'string' && previews[field.label].startsWith('data:image')) ? (
                   <img src={previews[field.label]} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full p-4 text-center bg-blue-50/70">
@@ -1261,13 +1293,13 @@ export default function RegistrationForm() {
                         </h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                           {getFieldsForSummary().filter(f => f.type === 'file').map(field => {
-                            const uploaded = !!formData[field.label];
-                            const preview = previews[field.label];
+                            const uploaded = formData ? !!formData[field.label] : false;
+                            const preview = previews ? previews[field.label] : undefined;
                             return (
                               <div key={field.id} className="bg-white p-3 rounded-xl border flex flex-col justify-between items-center text-center h-28 relative overflow-hidden shadow-xs">
                                 <span className="text-[10px] font-bold text-slate-500 block leading-tight mb-2 truncate max-w-full">{field.label}</span>
                                 {uploaded && preview ? (
-                                  preview.startsWith('data:image') ? (
+                                  (typeof preview === 'string' && preview.startsWith('data:image')) ? (
                                     <img src={preview} alt="Thumb" className="w-10 h-10 rounded-lg object-cover ring-2 ring-emerald-100" />
                                   ) : (
                                     <FileText className="w-8 h-8 text-blue-500" />
