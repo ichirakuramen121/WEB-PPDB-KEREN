@@ -10,6 +10,7 @@ import { getRegistrations, updateStatus, AdminData, updateSettings, getSettings,
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
+import { calculateDistance } from '../utils/distance';
 
 const compressImage = (
   file: File,
@@ -129,6 +130,9 @@ const calculateAge = (dateString: any, cutoffDateString?: any) => {
 
 const renderValue = (val: any) => {
   if (val === undefined || val === null) return '-';
+  if (typeof val === 'string' && val.trim().startsWith('data:')) {
+    return 'Berkas Terunggah';
+  }
   if (typeof val === 'object') {
     if (Array.isArray(val)) {
       return val.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ');
@@ -231,6 +235,29 @@ export default function AdminDashboard() {
   const [settingsTab, setSettingsTab] = useState<'school' | 'form' | 'surat' | 'daftar-ulang' | 'kepala-sekolah' | 'panduan'>('school');
   const itemsPerPage = 10;
   const navigate = useNavigate();
+
+  const getSafeDistance = (student: any) => {
+    if (!student) return '-';
+    let distVal = student['Jarak ke Sekolah (km)'];
+    const isCorrupt = !distVal || 
+                      String(distVal).includes('T') || 
+                      String(distVal).includes('-') || 
+                      isNaN(Number(distVal));
+                      
+    if (isCorrupt && student['Koordinat Lokasi'] && settings?.koordinatSekolah) {
+      try {
+        const [lat1, lon1] = student['Koordinat Lokasi'].split(',').map((s: string) => parseFloat(s.trim()));
+        const [lat2, lon2] = settings.koordinatSekolah.split(',').map((s: string) => parseFloat(s.trim()));
+        if (!isNaN(lat1) && !isNaN(lon1) && !isNaN(lat2) && !isNaN(lon2)) {
+          const calculated = calculateDistance(lat1, lon1, lat2, lon2);
+          return calculated.toFixed(2);
+        }
+      } catch (e) {
+        console.error("Failed to dynamically heal distance:", e);
+      }
+    }
+    return distVal || '-';
+  };
 
   const [showTrendChart, setShowTrendChart] = useState<boolean>(() => {
     return localStorage.getItem('show_trend_chart') !== 'false';
@@ -596,9 +623,7 @@ export default function AdminDashboard() {
       });
       
       // 3. Jarak & Lokasi Siswa
-      if (item['Jarak ke Sekolah (km)'] !== undefined) {
-        formattedItem['Jarak ke Sekolah (km)'] = item['Jarak ke Sekolah (km)'];
-      }
+      formattedItem['Jarak ke Sekolah (km)'] = getSafeDistance(item);
       if (item['Koordinat Lokasi']) {
         formattedItem['Koordinat Lokasi'] = item['Koordinat Lokasi'];
         formattedItem['Link Maps'] = `https://www.google.com/maps/search/?api=1&query=${item['Koordinat Lokasi']}`;
@@ -720,6 +745,9 @@ export default function AdminDashboard() {
         if (field.type === 'date') {
           value = formatDate(value);
         }
+        if (typeof value === 'string' && value.trim().startsWith('data:')) {
+          value = 'Berkas Terunggah';
+        }
         const splitVal = doc.splitTextToSize(String(value), 52);
         doc.text(splitVal, 50, col1Y);
         
@@ -738,6 +766,9 @@ export default function AdminDashboard() {
         let value = getFieldValue(student, field.id) || '-';
         if (field.type === 'date') {
           value = formatDate(value);
+        }
+        if (typeof value === 'string' && value.trim().startsWith('data:')) {
+          value = 'Berkas Terunggah';
         }
         const splitVal = doc.splitTextToSize(String(value), 52);
         doc.text(splitVal, 145, col2Y);
@@ -1097,7 +1128,7 @@ export default function AdminDashboard() {
                             {calculateAge(getFieldValue(item, 'Tanggal Lahir'), settings?.tanggalCutoffUsia)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            {item['Jarak ke Sekolah (km)'] ? `${item['Jarak ke Sekolah (km)']} km` : '-'}
+                            {getSafeDistance(item) !== '-' ? `${getSafeDistance(item)} km` : '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
                             {getFieldValue(item, 'NIK') || '-'}
@@ -2445,11 +2476,11 @@ export default function AdminDashboard() {
                           </dd>
                         </div>
                         
-                        {selectedStudent['Jarak ke Sekolah (km)'] && (
+                        {getSafeDistance(selectedStudent) !== '-' && (
                           <div className="grid grid-cols-3 gap-4">
                             <dt className="text-slate-500 dark:text-slate-400">Jarak ke Sekolah</dt>
                             <dd className="col-span-2 font-semibold text-blue-600 dark:text-blue-400">
-                              {selectedStudent['Jarak ke Sekolah (km)']} km
+                              {getSafeDistance(selectedStudent)} km
                             </dd>
                           </div>
                         )}

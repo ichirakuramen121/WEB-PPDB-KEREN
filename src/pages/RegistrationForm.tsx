@@ -116,7 +116,13 @@ export default function RegistrationForm() {
   }, [distance]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    
+    // Enforce numeric only for NISN
+    if (name.toUpperCase().includes('NISN')) {
+      value = value.replace(/\D/g, '');
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
     // Clear validation error when typing
     if (validationErrors[name]) {
@@ -831,6 +837,7 @@ export default function RegistrationForm() {
           </div>
         );
       default:
+        const isNisn = field.label.toUpperCase().includes('NISN');
         return (
           <input
             type={field.type}
@@ -838,6 +845,8 @@ export default function RegistrationForm() {
             required={field.required}
             value={formData[field.label] || ''}
             onChange={handleChange}
+            inputMode={isNisn ? 'numeric' : undefined}
+            pattern={isNisn ? '[0-9]*' : undefined}
             className={commonClasses}
             placeholder={`Masukkan ${field.label}...`}
           />
