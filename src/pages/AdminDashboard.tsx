@@ -333,23 +333,53 @@ export default function AdminDashboard() {
   const getFieldValue = (item: any, fieldId: string) => {
     if (!item) return '';
     const field = settings?.formFields?.find(f => f.id === fieldId);
-    let val = (field && item[field.label] !== undefined) ? item[field.label] : item[fieldId];
+    
+    let val = undefined;
+    if (field) {
+      const hasCollision = settings?.formFields?.some(other => other.id !== field.id && other.label === field.label && other.type !== 'file');
+      if (field.type === 'file' && (hasCollision || field.label === 'NISN')) {
+        const berkasKey = `${field.label} (Berkas)`;
+        if (item[berkasKey] !== undefined) {
+          val = item[berkasKey];
+        }
+      }
+    }
+    
+    if (val === undefined) {
+      val = (field && item[field.label] !== undefined) ? item[field.label] : item[fieldId];
+    }
     
     // Cleanup NISN value to show only numbers only if it is not a file field
     const isNisn = String(fieldId).toUpperCase().includes('NISN') || (field && String(field.label || '').toUpperCase().includes('NISN'));
     if (isNisn) {
-      if (val === undefined || val === null || val === '') {
-        const nisnKey = Object.keys(item || {}).find(k => k.toUpperCase().includes('NISN'));
-        if (nisnKey) {
-          val = item[nisnKey];
+      if (field && field.type === 'file') {
+        if (val !== undefined && val !== null && !isFileUploaded(val)) {
+          const berkasKey = `${field.label} (Berkas)`;
+          if (item[berkasKey] && isFileUploaded(item[berkasKey])) {
+            val = item[berkasKey];
+          } else {
+            const foundKey = Object.keys(item || {}).find(k => k.toUpperCase().includes('NISN') && k.toUpperCase().includes('BERKAS'));
+            if (foundKey && isFileUploaded(item[foundKey])) {
+              val = item[foundKey];
+            } else {
+              val = '';
+            }
+          }
         }
-      }
-      if (field && field.type !== 'file' && val !== undefined && val !== null) {
-        const stringVal = String(val).trim();
-        if (stringVal.startsWith('data:') || stringVal.startsWith('http') || stringVal.includes('/') || stringVal.includes(':') || stringVal.includes('\\')) {
-          return ''; // empty Google Drive links, file paths or base64 data
+      } else {
+        if (val === undefined || val === null || val === '') {
+          const nisnKey = Object.keys(item || {}).find(k => k.toUpperCase().includes('NISN') && !k.toUpperCase().includes('BERKAS'));
+          if (nisnKey) {
+            val = item[nisnKey];
+          }
         }
-        return stringVal.replace(/\D/g, ''); // leave only digits
+        if (val !== undefined && val !== null) {
+          const stringVal = String(val).trim();
+          if (stringVal.startsWith('data:') || stringVal.startsWith('http') || stringVal.includes('/') || stringVal.includes(':') || stringVal.includes('\\')) {
+            return ''; // empty Google Drive links, file paths or base64 data
+          }
+          return stringVal.replace(/\D/g, ''); // leave only digits
+        }
       }
     }
     

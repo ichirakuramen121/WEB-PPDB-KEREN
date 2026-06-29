@@ -29,21 +29,47 @@ import jsPDF from 'jspdf';
 import MapPicker from '../components/MapPicker';
 import { calculateDistance } from '../utils/distance';
 
+const isFileUploaded = (url: any): boolean => {
+  if (!url) return false;
+  if (typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  return trimmed.startsWith('data:') || trimmed.startsWith('http://') || trimmed.startsWith('https://');
+};
+
 export default function RegistrationForm() {
   const { settings } = useSettings();
+
+  const getFormFieldKey = (field: any) => {
+    if (!field) return '';
+    const hasCollision = (settings?.formFields || []).some(other => other.id !== field.id && other.label === field.label && other.type !== 'file');
+    if (field.type === 'file' && (hasCollision || field.label === 'NISN')) {
+      return `${field.label} (Berkas)`;
+    }
+    return field.label;
+  };
   
   const renderVerificationValue = (val: any, field?: any) => {
     const isNisn = field && (String(field.label || '').toUpperCase().includes('NISN') || String(field.id || '').toUpperCase().includes('NISN'));
     if (isNisn) {
       let nisnVal = val;
       if (val === undefined || val === null || val === '') {
-        const nisnKey = Object.keys(formData || {}).find(k => k.toUpperCase().includes('NISN'));
-        if (nisnKey) {
-          nisnVal = formData[nisnKey];
+        const key = getFormFieldKey(field);
+        if (formData && formData[key] !== undefined) {
+          nisnVal = formData[key];
+        } else {
+          const nisnKey = Object.keys(formData || {}).find(k => k.toUpperCase().includes('NISN'));
+          if (nisnKey) {
+            nisnVal = formData[nisnKey];
+          }
         }
       }
       if (nisnVal === undefined || nisnVal === null || nisnVal === '') return '-';
       const stringVal = String(nisnVal).trim();
+      
+      if (field && field.type === 'file') {
+        return isFileUploaded(stringVal) ? 'Berkas Terunggah' : '-';
+      }
+      
       const digitsOnly = stringVal.replace(/\D/g, '');
       return digitsOnly || '-';
     }
@@ -293,7 +319,7 @@ export default function RegistrationForm() {
     // Filters non-file fields and fields with base64 data to keep PDF neat
     const printableFields = getFieldsForSummary().filter(field => {
       if (field.type === 'file') return false;
-      const val = formData[field.label];
+      const val = formData[getFormFieldKey(field)];
       if (typeof val === 'string' && val.trim().startsWith('data:')) return false;
       return true;
     });
@@ -357,7 +383,7 @@ export default function RegistrationForm() {
         doc.text(splitLabel, 15, col1Y);
         
         doc.setFont("helvetica", "normal");
-        let value = formData[field.label] || '-';
+        let value = formData[getFormFieldKey(field)] || '-';
         if (field.type === 'date') {
           value = formatDate(value);
         }
@@ -382,7 +408,7 @@ export default function RegistrationForm() {
         doc.text(splitLabel, 110, col2Y);
         
         doc.setFont("helvetica", "normal");
-        let value = formData[field.label] || '-';
+        let value = formData[getFormFieldKey(field)] || '-';
         if (field.type === 'date') {
           value = formatDate(value);
         }
@@ -486,7 +512,8 @@ export default function RegistrationForm() {
     
     // Validate current step fields
     currentFields.forEach(f => {
-      if (f.required && !formData[f.label]) {
+      const key = getFormFieldKey(f);
+      if (f.required && !formData[key]) {
         errors[f.label] = `${f.label} tidak boleh kosong`;
       }
     });
@@ -535,7 +562,7 @@ export default function RegistrationForm() {
 
     // Final comprehensive validation
     const allFields = settings?.formFields || [];
-    const missingFields = allFields.filter(f => f.required && !formData[f.label]);
+    const missingFields = allFields.filter(f => f.required && !formData[getFormFieldKey(f)]);
     
     if (missingFields.length > 0) {
       Swal.fire({
@@ -814,12 +841,13 @@ export default function RegistrationForm() {
           </div>
         );
       case 'file':
-        const isDragging = dragActive[field.label];
+        const fileKey = getFormFieldKey(field);
+        const isDragging = dragActive[fileKey];
         return (
           <div 
-            onDragOver={(e) => handleDrag(e, field.label, true)}
-            onDragLeave={(e) => handleDrag(e, field.label, false)}
-            onDrop={(e) => handleDrop(e, field.label)}
+            onDragOver={(e) => handleDrag(e, fileKey, true)}
+            onDragLeave={(e) => handleDrag(e, fileKey, false)}
+            onDrop={(e) => handleDrop(e, fileKey)}
             className={`relative flex-grow border-2 border-dashed rounded-2xl transition-all bg-slate-50/50 group overflow-hidden h-44 flex flex-col justify-center items-center ${
               isDragging 
                 ? 'border-blue-600 bg-blue-50' 
@@ -831,14 +859,14 @@ export default function RegistrationForm() {
             <input
               type="file"
               accept="image/jpeg, image/png, application/pdf"
-              required={field.required && !formData[field.label]}
-              onChange={(e) => handleFileChange(e, field.label)}
+              required={field.required && !formData[fileKey]}
+              onChange={(e) => handleFileChange(e, fileKey)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
-            {previews && previews[field.label] ? (
+            {previews && previews[fileKey] ? (
               <div className="absolute inset-0 z-0">
-                {(typeof previews[field.label] === 'string' && previews[field.label].startsWith('data:image')) ? (
-                  <img src={previews[field.label]} alt="Preview" className="w-full h-full object-cover" />
+                {(typeof previews[fileKey] === 'string' && previews[fileKey].startsWith('data:image')) ? (
+                  <img src={previews[fileKey]} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full p-4 text-center bg-blue-50/70">
                     <FileText className="w-12 h-12 text-blue-500 mb-2" />
@@ -1261,7 +1289,7 @@ export default function RegistrationForm() {
                           })().map(field => (
                             <div key={field.id} className="flex flex-col">
                               <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{field.label}</span>
-                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[field.label], field)}</span>
+                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[getFormFieldKey(field)], field)}</span>
                             </div>
                           ))}
                           {distance !== null && (
@@ -1282,7 +1310,7 @@ export default function RegistrationForm() {
                           {getFieldsForSummary().filter(f => (getFieldSession(f) === 2 || getFieldSession(f) === 3) && f.type !== 'file').map(field => (
                             <div key={field.id} className="flex flex-col">
                               <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{field.label}</span>
-                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[field.label], field)}</span>
+                              <span className="text-slate-800 font-semibold mt-0.5">{renderVerificationValue(formData[getFormFieldKey(field)], field)}</span>
                             </div>
                           ))}
                         </div>
@@ -1296,8 +1324,9 @@ export default function RegistrationForm() {
                         </h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                           {getFieldsForSummary().filter(f => f.type === 'file').map(field => {
-                            const uploaded = formData ? !!formData[field.label] : false;
-                            const preview = previews ? previews[field.label] : undefined;
+                            const key = getFormFieldKey(field);
+                            const uploaded = formData ? !!formData[key] : false;
+                            const preview = previews ? previews[key] : undefined;
                             return (
                               <div key={field.id} className="bg-white p-3 rounded-xl border flex flex-col justify-between items-center text-center h-28 relative overflow-hidden shadow-xs">
                                 <span className="text-[10px] font-bold text-slate-500 block leading-tight mb-2 truncate max-w-full">{field.label}</span>
