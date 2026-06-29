@@ -188,18 +188,9 @@ const formatJakartaTimestamp = (timestampString: any) => {
 const enrichFields = (fields: any[]): any[] => {
   return (fields || []).map((field, idx) => {
     let session = field.session;
-    let type = field.type;
-    let required = field.required;
     
-    // Override NISN properties
-    const isNisn = String(field.label || '').toUpperCase().includes('NISN') || String(field.id || '').toUpperCase().includes('NISN');
-    if (isNisn) {
-      type = 'text';
-      required = false;
-    }
-
     if (session === undefined || session === null) {
-      if (type === 'file') {
+      if (field.type === 'file') {
         session = 4;
       } else {
         const idLower = String(field.id || '').toLowerCase();
@@ -225,8 +216,6 @@ const enrichFields = (fields: any[]): any[] => {
     }
     return {
       ...field,
-      type,
-      required,
       session: Number(session) as 1 | 2 | 3 | 4,
       _tempKey: field._tempKey || `stable_key_${idx}_${Math.random().toString(36).substr(2, 9)}`,
       _rawOptions: field._rawOptions !== undefined ? field._rawOptions : (field.options?.join(', ') || '')
@@ -346,9 +335,9 @@ export default function AdminDashboard() {
     const field = settings?.formFields?.find(f => f.id === fieldId);
     let val = (field && item[field.label] !== undefined) ? item[field.label] : item[fieldId];
     
-    // Cleanup NISN value to show only numbers and empty it if it's a link or file
+    // Cleanup NISN value to show only numbers only if it is not a file field
     const isNisn = String(fieldId).toUpperCase().includes('NISN') || (field && String(field.label || '').toUpperCase().includes('NISN'));
-    if (isNisn && val !== undefined && val !== null) {
+    if (isNisn && field && field.type !== 'file' && val !== undefined && val !== null) {
       const stringVal = String(val).trim();
       if (stringVal.startsWith('data:') || stringVal.startsWith('http') || stringVal.includes('/') || stringVal.includes(':') || stringVal.includes('\\')) {
         return ''; // empty Google Drive links, file paths or base64 data

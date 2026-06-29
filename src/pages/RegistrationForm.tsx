@@ -29,41 +29,26 @@ import jsPDF from 'jspdf';
 import MapPicker from '../components/MapPicker';
 import { calculateDistance } from '../utils/distance';
 
-const overrideNisnField = (field: any) => {
-  if (!field) return field;
-  const isNisn = String(field.label || '').toUpperCase().includes('NISN') || String(field.id || '').toUpperCase().includes('NISN');
-  if (isNisn) {
-    return {
-      ...field,
-      type: 'text',
-      required: false // "JIKA TIDAK MENGINPUT KOSONGKAN SAJA"
-    };
-  }
-  return field;
-};
-
 export default function RegistrationForm() {
   const { settings } = useSettings();
   
   const renderVerificationValue = (val: any, field?: any) => {
     if (val === undefined || val === null || val === '') return '-';
     
-    const isNisn = field && (String(field.label || '').toUpperCase().includes('NISN') || String(field.id || '').toUpperCase().includes('NISN'));
-    if (isNisn) {
-      const stringVal = String(val).trim();
-      if (stringVal.startsWith('data:') || stringVal.startsWith('http') || stringVal.includes('/') || stringVal.includes(':') || stringVal.includes('\\')) {
-        return '-';
-      }
-      const digitsOnly = stringVal.replace(/\D/g, '');
-      return digitsOnly || '-';
-    }
-
     if (field && field.type === 'file') {
       return 'Berkas Terunggah';
     }
     if (typeof val === 'string' && val.trim().startsWith('data:')) {
       return '-';
     }
+
+    const isNisn = field && (String(field.label || '').toUpperCase().includes('NISN') || String(field.id || '').toUpperCase().includes('NISN'));
+    if (isNisn) {
+      const stringVal = String(val).trim();
+      const digitsOnly = stringVal.replace(/\D/g, '');
+      return digitsOnly || '-';
+    }
+
     return String(val);
   };
   const scheduledStatus = getScheduledStatus(settings);
@@ -480,11 +465,11 @@ export default function RegistrationForm() {
   };
 
   const getFieldsForStep = (stepNum: number) => {
-    return (settings?.formFields || []).map(overrideNisnField).filter(field => getFieldSession(field) === stepNum);
+    return (settings?.formFields || []).filter(field => getFieldSession(field) === stepNum);
   };
 
   const getFieldsForSummary = () => {
-    return (settings?.formFields || []).map(overrideNisnField);
+    return settings?.formFields || [];
   };
 
   const handleNextStep = () => {
