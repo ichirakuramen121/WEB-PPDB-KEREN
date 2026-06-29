@@ -3,6 +3,21 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 
+class Mutex {
+  private promise: Promise<void> = Promise.resolve();
+
+  async runExclusive<T>(callback: () => Promise<T> | T): Promise<T> {
+    const nextPromise = this.promise.then(async () => {
+      return callback();
+    });
+    this.promise = nextPromise.then(() => {}).catch(() => {});
+    return nextPromise;
+  }
+}
+
+const regMutex = new Mutex();
+const settingsMutex = new Mutex();
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -88,30 +103,84 @@ async function startServer() {
   const loadSettings = async () => {
     if (fs.existsSync(SETTINGS_PATH)) {
       try {
-        return JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8"));
+        const content = fs.readFileSync(SETTINGS_PATH, "utf-8");
+        if (content.trim()) {
+          return JSON.parse(content);
+        }
       } catch (e) {
-        console.error("Error reading settings.json", e);
+        console.error("Error reading settings.json, trying backup...", e);
+        const bakPath = `${SETTINGS_PATH}.bak`;
+        if (fs.existsSync(bakPath)) {
+          try {
+            const contentBak = fs.readFileSync(bakPath, "utf-8");
+            if (contentBak.trim()) {
+              return JSON.parse(contentBak);
+            }
+          } catch (ebak) {
+            console.error("Error reading settings.json.bak", ebak);
+          }
+        }
       }
     }
     // Write initial settings
-    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(defaultSettings, null, 2));
+    try {
+      fs.writeFileSync(SETTINGS_PATH, JSON.stringify(defaultSettings, null, 2));
+    } catch (err) {
+      console.error("Error writing initial settings.json", err);
+    }
     return defaultSettings;
   };
 
   const saveSettings = async (newSettings: any) => {
     try {
-      fs.writeFileSync(SETTINGS_PATH, JSON.stringify(newSettings, null, 2));
+      const tempPath = `${SETTINGS_PATH}.tmp`;
+      const bakPath = `${SETTINGS_PATH}.bak`;
+
+      fs.writeFileSync(tempPath, JSON.stringify(newSettings, null, 2));
+
+      if (fs.existsSync(SETTINGS_PATH)) {
+        try {
+          const currentContent = fs.readFileSync(SETTINGS_PATH, "utf-8");
+          if (currentContent.trim()) {
+            JSON.parse(currentContent);
+            fs.copyFileSync(SETTINGS_PATH, bakPath);
+          }
+        } catch (eCheck) {
+          console.error("Skipping settings backup because settings.json is corrupted", eCheck);
+        }
+      }
+
+      fs.renameSync(tempPath, SETTINGS_PATH);
     } catch (e) {
-      console.error("Error saving settings.json", e);
+      console.error("Error saving atomic settings.json", e);
+      try {
+        fs.writeFileSync(SETTINGS_PATH, JSON.stringify(newSettings, null, 2));
+      } catch (errFallback) {
+        console.error("Fallback settings writing failed", errFallback);
+      }
     }
   };
 
   const loadRegistrations = async () => {
     if (fs.existsSync(REGISTRATIONS_PATH)) {
       try {
-        return JSON.parse(fs.readFileSync(REGISTRATIONS_PATH, "utf-8"));
+        const content = fs.readFileSync(REGISTRATIONS_PATH, "utf-8");
+        if (content.trim()) {
+          return JSON.parse(content);
+        }
       } catch (e) {
-        console.error("Error reading registrations.json", e);
+        console.error("Error reading registrations.json, trying backup...", e);
+        const bakPath = `${REGISTRATIONS_PATH}.bak`;
+        if (fs.existsSync(bakPath)) {
+          try {
+            const contentBak = fs.readFileSync(bakPath, "utf-8");
+            if (contentBak.trim()) {
+              return JSON.parse(contentBak);
+            }
+          } catch (ebak) {
+            console.error("Error reading registrations.json.bak", ebak);
+          }
+        }
       }
     }
     const initialRegistrations = [
@@ -130,143 +199,236 @@ async function startServer() {
         Status: "Proses"
       }
     ];
-    fs.writeFileSync(REGISTRATIONS_PATH, JSON.stringify(initialRegistrations, null, 2));
+    try {
+      fs.writeFileSync(REGISTRATIONS_PATH, JSON.stringify(initialRegistrations, null, 2));
+    } catch (err) {
+      console.error("Error writing initial registrations file:", err);
+    }
     return initialRegistrations;
   };
 
   const saveRegistrations = async (regs: any[]) => {
     try {
-      fs.writeFileSync(REGISTRATIONS_PATH, JSON.stringify(regs, null, 2));
+      const tempPath = `${REGISTRATIONS_PATH}.tmp`;
+      const bakPath = `${REGISTRATIONS_PATH}.bak`;
+      
+      // Write to temp file first
+      fs.writeFileSync(tempPath, JSON.stringify(regs, null, 2));
+      
+      // If there is an existing valid file, back it up
+      if (fs.existsSync(REGISTRATIONS_PATH)) {
+        try {
+          const currentContent = fs.readFileSync(REGISTRATIONS_PATH, "utf-8");
+          if (currentContent.trim()) {
+            // Verify it is parseable JSON before backing up so we don't backup a corrupted file
+            JSON.parse(currentContent);
+            fs.copyFileSync(REGISTRATIONS_PATH, bakPath);
+          }
+        } catch (eCheck) {
+          console.error("Skipping backup because current registrations.json is corrupted", eCheck);
+        }
+      }
+      
+      // Atomically rename temp file to real file (highly robust)
+      fs.renameSync(tempPath, REGISTRATIONS_PATH);
     } catch (e) {
-      console.error("Error saving backup registrations.json", e);
+      console.error("Error saving atomic registrations.json", e);
+      // Fallback
+      try {
+        fs.writeFileSync(REGISTRATIONS_PATH, JSON.stringify(regs, null, 2));
+      } catch (errFallback) {
+        console.error("Fallback writing failed", errFallback);
+      }
     }
   };
 
   // API - Get Settings
   app.get("/api/settings", async (req, res) => {
-    const settings = await loadSettings();
-    res.json({ status: "success", data: settings });
+    try {
+      const settings = await settingsMutex.runExclusive(async () => {
+        return await loadSettings();
+      });
+      res.json({ status: "success", data: settings });
+    } catch (error: any) {
+      console.error("Error loading settings:", error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
+    }
   });
 
   // API - Update Settings
   app.post("/api/settings", async (req, res) => {
-    const current = await loadSettings();
-    const updated = { ...current, ...req.body };
-    await saveSettings(updated);
-    res.json({ status: "success", data: updated });
+    try {
+      const updated = await settingsMutex.runExclusive(async () => {
+        const current = await loadSettings();
+        const nextSettings = { ...current, ...req.body };
+        await saveSettings(nextSettings);
+        return nextSettings;
+      });
+      res.json({ status: "success", data: updated });
+    } catch (error: any) {
+      console.error("Error updating settings:", error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
+    }
   });
 
   // API - Get Registrations
   app.get("/api/registrations", async (req, res) => {
-    const registrations = await loadRegistrations();
-    res.json({ status: "success", data: registrations });
+    try {
+      const registrations = await regMutex.runExclusive(async () => {
+        return await loadRegistrations();
+      });
+      res.json({ status: "success", data: registrations });
+    } catch (error: any) {
+      console.error("Error fetching registrations:", error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
+    }
   });
 
   // API - New Registration
   app.post("/api/registrations", async (req, res) => {
-    const settings = await loadSettings();
-    const registrations = await loadRegistrations();
+    try {
+      const result = await regMutex.runExclusive(async () => {
+        const settings = await loadSettings();
+        const registrations = await loadRegistrations();
 
-    const data = req.body;
-    let year = settings.tahunPendaftaran || new Date().getFullYear().toString();
+        const data = req.body;
+        let year = settings.tahunPendaftaran || new Date().getFullYear().toString();
 
-    // Helper to generate a 4-character random alphanumeric string
-    const generateRandomCode = (length = 4): string => {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      let result = "";
-      for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-    };
+        // Helper to generate a 4-character random alphanumeric string
+        const generateRandomCode = (length = 4): string => {
+          const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+          let result = "";
+          for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return result;
+        };
 
-    let noPendaftaran = "";
-    let isUnique = false;
-    let yearFormatted = year;
-    if (!year.includes('/')) {
-      const nextYear = isNaN(Number(year)) ? (new Date().getFullYear() + 1).toString() : (Number(year) + 1).toString();
-      yearFormatted = `${year}/${nextYear}`;
+        let noPendaftaran = "";
+        let isUnique = false;
+        let yearFormatted = year;
+        if (!year.includes('/')) {
+          const nextYear = isNaN(Number(year)) ? (new Date().getFullYear() + 1).toString() : (Number(year) + 1).toString();
+          yearFormatted = `${year}/${nextYear}`;
+        }
+        while (!isUnique) {
+          const code = generateRandomCode(4);
+          noPendaftaran = `SPMB-${yearFormatted}-${code}`;
+          isUnique = !registrations.some((r: any) => r["No Pendaftaran"] === noPendaftaran);
+        }
+
+        const getJakartaTimeISO = () => {
+          const d = new Date();
+          const tzOffset = 7 * 60; // WIB is UTC+7
+          const localTime = new Date(d.getTime() + tzOffset * 60 * 1000);
+          return localTime.toISOString().replace('Z', '+07:00');
+        };
+
+        const newEntry: any = {
+          ...data,
+          Timestamp: getJakartaTimeISO(),
+          "No Pendaftaran": noPendaftaran,
+          Status: "Proses"
+        };
+
+        registrations.push(newEntry);
+        await saveRegistrations(registrations);
+
+        return { status: "success", noPendaftaran };
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error creating registration:", error);
+      res.status(500).json({ status: "error", message: error.message || "Internal server error" });
     }
-    while (!isUnique) {
-      const code = generateRandomCode(4);
-      noPendaftaran = `SPMB-${yearFormatted}-${code}`;
-      isUnique = !registrations.some((r: any) => r["No Pendaftaran"] === noPendaftaran);
-    }
-
-    const getJakartaTimeISO = () => {
-      const d = new Date();
-      const tzOffset = 7 * 60; // WIB is UTC+7
-      const localTime = new Date(d.getTime() + tzOffset * 60 * 1000);
-      return localTime.toISOString().replace('Z', '+07:00');
-    };
-
-    const newEntry: any = {
-      ...data,
-      Timestamp: getJakartaTimeISO(),
-      "No Pendaftaran": noPendaftaran,
-      Status: "Proses"
-    };
-
-    registrations.push(newEntry);
-    await saveRegistrations(registrations);
-
-    res.json({ status: "success", noPendaftaran });
   });
 
   // API - Update Status
   app.post("/api/registrations/status", async (req, res) => {
-    const { noPendaftaran, newStatus, alasan } = req.body;
-    const registrations = await loadRegistrations();
-    const index = registrations.findIndex((r: any) => r["No Pendaftaran"] === noPendaftaran);
+    try {
+      const { noPendaftaran, newStatus, alasan } = req.body;
+      const result = await regMutex.runExclusive(async () => {
+        const registrations = await loadRegistrations();
+        const index = registrations.findIndex((r: any) => r["No Pendaftaran"] === noPendaftaran);
 
-    if (index !== -1) {
-      registrations[index].Status = newStatus;
-      if (alasan !== undefined) {
-        registrations[index]["Alasan Penolakan"] = alasan;
+        if (index !== -1) {
+          registrations[index].Status = newStatus;
+          if (alasan !== undefined) {
+            registrations[index]["Alasan Penolakan"] = alasan;
+          }
+          
+          await saveRegistrations(registrations);
+          return { status: "success" };
+        }
+        return { status: "error", message: "Data tidak ditemukan", code: 404 };
+      });
+
+      if (result.status === "error") {
+        return res.status(result.code || 400).json({ status: "error", message: result.message });
       }
-      
-      await saveRegistrations(registrations);
-      return res.json({ status: "success" });
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error updating status:", error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
     }
-
-    res.status(404).json({ status: "error", message: "Data tidak ditemukan" });
   });
 
   // API - Delete Registration
   app.delete("/api/registrations/:noPendaftaran", async (req, res) => {
-    const { noPendaftaran } = req.params;
-    const registrations = await loadRegistrations();
-    const index = registrations.findIndex((r: any) => r["No Pendaftaran"] === noPendaftaran);
+    try {
+      const { noPendaftaran } = req.params;
+      const result = await regMutex.runExclusive(async () => {
+        const registrations = await loadRegistrations();
+        const index = registrations.findIndex((r: any) => r["No Pendaftaran"] === noPendaftaran);
 
-    if (index !== -1) {
-      registrations.splice(index, 1);
-      await saveRegistrations(registrations);
-      return res.json({ status: "success" });
+        if (index !== -1) {
+          registrations.splice(index, 1);
+          await saveRegistrations(registrations);
+          return { status: "success" };
+        }
+        return { status: "error", message: "Data tidak ditemukan", code: 404 };
+      });
+
+      if (result.status === "error") {
+        return res.status(result.code || 400).json({ status: "error", message: result.message });
+      }
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error deleting registration:", error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
     }
-
-    res.status(404).json({ status: "error", message: "Data tidak ditemukan" });
   });
 
   // API - Check Status
   app.post("/api/registrations/check", async (req, res) => {
-    const { noPendaftaran } = req.body;
-    const registrations = await loadRegistrations();
-    const student = registrations.find((r: any) => r["No Pendaftaran"] === noPendaftaran);
+    try {
+      const { noPendaftaran } = req.body;
+      const result = await regMutex.runExclusive(async () => {
+        const registrations = await loadRegistrations();
+        const student = registrations.find((r: any) => r["No Pendaftaran"] === noPendaftaran);
 
-    if (student) {
-      const namaKey = Object.keys(student).find(k => k.toLowerCase().includes("nama")) || "Nama Lengkap";
-      return res.json({
-        status: "success",
-        data: {
-          noPendaftaran: student["No Pendaftaran"],
-          namaLengkap: student[namaKey] || "Siswa",
-          status: student.Status,
-          alasanPenolakan: student["Alasan Penolakan"]
+        if (student) {
+          const namaKey = Object.keys(student).find(k => k.toLowerCase().includes("nama")) || "Nama Lengkap";
+          return {
+            status: "success",
+            data: {
+              ...student,
+              noPendaftaran: student["No Pendaftaran"],
+              namaLengkap: student[namaKey] || "Siswa",
+              status: student.Status,
+              alasanPenolakan: student["Alasan Penolakan"]
+            }
+          };
         }
+        return { status: "error", message: "Data tidak ditemukan" };
       });
-    }
 
-    res.json({ status: "error", message: "Data tidak ditemukan" });
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error checking status:", error);
+      res.status(500).json({ status: "error", message: "Internal server error" });
+    }
   });
 
   // API - Administrative Login

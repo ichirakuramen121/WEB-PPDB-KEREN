@@ -109,6 +109,8 @@ export const getInitialMockSettings = (): AppSettings => {
     formFields: [
       { id: "Nama Lengkap", label: "Nama Lengkap", type: "text", required: true, session: 1 },
       { id: "NIK", label: "NIK", type: "text", required: true, session: 1 },
+      { id: "No. KK", label: "No. KK", type: "text", required: true, session: 1 },
+      { id: "No. Akta Kelahiran", label: "No. Akta Kelahiran", type: "text", required: true, session: 1 },
       { id: "Tempat Lahir", label: "Tempat Lahir", type: "text", required: true, session: 1 },
       { id: "Tanggal Lahir", label: "Tanggal Lahir", type: "date", required: true, session: 1 },
       { id: "Jenis Kelamin", label: "Jenis Kelamin", type: "select", options: ["Laki-laki", "Perempuan"], required: true, session: 1 },
@@ -590,6 +592,7 @@ export const checkStatus = async (noPendaftaran: string) => {
       return { 
         status: "success", 
         data: {
+          ...student,
           noPendaftaran: student['No Pendaftaran'],
           namaLengkap: student[namaKey] || 'Siswa',
           status: student.Status,

@@ -337,6 +337,8 @@ export default function CheckStatus() {
     renderRow1('No. Pendaftaran', data.noPendaftaran || '-');
     renderRow1('Nama Lengkap', data.namaLengkap || '-');
     renderRow1('NIK Siswa', data.NIK || '________________________________________________');
+    renderRow1('No. KK', data['No. KK'] || '________________________________________________');
+    renderRow1('No. Akta Kelahiran', data['No. Akta Kelahiran'] || '________________________________________________');
     renderRow1('Tempat, Tanggal Lahir', (data['Tempat Lahir'] || '____________________') + ', ' + (data['Tanggal Lahir'] || '____________________'));
     renderRow1('Jenis Kelamin', data['Jenis Kelamin'] || '____________________');
     renderRow1('Alamat Calon Siswa', data.Alamat || '________________________________________________');

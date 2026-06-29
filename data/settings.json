@@ -35,6 +35,20 @@
       "session": 1
     },
     {
+      "id": "No. KK",
+      "label": "No. KK",
+      "type": "text",
+      "required": true,
+      "session": 1
+    },
+    {
+      "id": "No. Akta Kelahiran",
+      "label": "No. Akta Kelahiran",
+      "type": "text",
+      "required": true,
+      "session": 1
+    },
+    {
       "id": "Tempat Lahir",
       "label": "Tempat Lahir",
       "type": "text",

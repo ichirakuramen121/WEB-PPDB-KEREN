@@ -118,12 +118,26 @@ function ensureSheetsExist() {
 }
 
 function doPost(e) {
+  const lock = LockService.getScriptLock();
+  let hasLock = false;
   try {
     ensureSheetsExist();
     const data = JSON.parse(e.postData.contents);
     
     if (data.action === "login") return handleLogin(data.username, data.password);
     if (data.action === "checkStatus") return handleCheckStatus(data.noPendaftaran);
+    
+    // Acquire a script lock for all database-modifying actions (30s timeout)
+    try {
+      lock.waitLock(30000);
+      hasLock = true;
+    } catch (lockError) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "Server sedang sibuk karena trafik pendaftaran sangat tinggi. Silakan coba klik tombol kirim lagi."
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     if (data.action === "updateStatus") return updateStatus(data.noPendaftaran, data.newStatus, data.alasan);
     if (data.action === "deleteRegistration") return deleteRegistration(data.noPendaftaran);
     if (data.action === "updateSettings") return handleUpdateSettings(data.settings);
@@ -135,6 +149,10 @@ function doPost(e) {
       status: "error",
       message: error.toString()
     })).setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    if (hasLock) {
+      lock.releaseLock();
+    }
   }
 }
 
@@ -254,57 +272,44 @@ function handleUpdateSettings(newSettings) {
 }
 
 function syncSheetColumns(sheet, newFields) {
-  const lastRow = sheet.getLastRow();
   const lastCol = sheet.getLastColumn();
-  
   if (lastCol === 0) return; // Empty sheet
   
-  // 1. Read existing headers and data
-  const entireRange = sheet.getRange(1, 1, Math.max(lastRow, 1), Math.max(lastCol, 1));
-  const oldValues = entireRange.getValues();
-  const oldHeaders = oldValues[0];
-  const oldRows = oldValues.slice(1);
-  
-  // Create objects of existing rows to map data correctly
-  const records = oldRows.map(row => {
-    let obj = {};
-    oldHeaders.forEach((header, index) => {
-      if (header) {
-        obj[header] = row[index];
-      }
-    });
-    return obj;
+  // 1. Read existing headers
+  const oldHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const oldHeadersMap = {};
+  oldHeaders.forEach(function(header) {
+    if (header) {
+      oldHeadersMap[header] = true;
+    }
   });
   
   // 2. Define standard base headers
   const baseHeaders = ["Timestamp", "No Pendaftaran", "Status", "Alasan Penolakan", "Jarak ke Sekolah (km)", "Koordinat Lokasi"];
+  const headersToAdd = [];
   
-  // 3. Define new headers list based on configured active form fields
-  const newHeaders = [...baseHeaders];
-  newFields.forEach(field => {
-    if (field && field.label && !newHeaders.includes(field.label)) {
-      newHeaders.push(field.label);
+  baseHeaders.forEach(function(hdr) {
+    if (!oldHeadersMap[hdr]) {
+      headersToAdd.push(hdr);
+      oldHeadersMap[hdr] = true;
     }
   });
   
-  // 4. Construct the new values grid
-  const newValuesGrid = [];
-  newValuesGrid.push(newHeaders); // First row is headers
-  
-  records.forEach(vDoc => {
-    const row = newHeaders.map(hdr => {
-      return vDoc[hdr] !== undefined ? vDoc[hdr] : "";
-    });
-    newValuesGrid.push(row);
+  // 3. Find any active form fields that aren't in the headers yet
+  newFields.forEach(function(field) {
+    if (field && field.label && !oldHeadersMap[field.label]) {
+      headersToAdd.push(field.label);
+      oldHeadersMap[field.label] = true;
+    }
   });
   
-  // 5. Clear the old sheet ranges completely and write the aligned data
-  sheet.clear();
-  sheet.getRange(1, 1, newValuesGrid.length, newHeaders.length).setValues(newValuesGrid);
-  
-  // Style the header row nicely
-  sheet.getRange(1, 1, 1, newHeaders.length).setFontWeight("bold").setBackground("#e0e0e0");
-  sheet.setFrozenRows(1);
+  // 4. Append the missing headers safely to the end of Row 1
+  if (headersToAdd.length > 0) {
+    const startCol = lastCol + 1;
+    sheet.getRange(1, startCol, 1, headersToAdd.length).setValues([headersToAdd]);
+    // Style the new headers
+    sheet.getRange(1, startCol, 1, headersToAdd.length).setFontWeight("bold").setBackground("#e0e0e0");
+  }
 }
 
 function handleRegistration(data) {
@@ -448,14 +453,20 @@ function handleCheckStatus(noPendaftaran) {
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][noRegIdx] === noPendaftaran) {
+      var studentObj = {};
+      headers.forEach(function(header, idx) {
+        if (header) {
+          studentObj[header] = data[i][idx];
+        }
+      });
+      studentObj["noPendaftaran"] = data[i][noRegIdx];
+      studentObj["namaLengkap"] = namaIdx !== -1 ? data[i][namaIdx] : "Siswa";
+      studentObj["status"] = statusIdx !== -1 ? data[i][statusIdx] : "Proses";
+      studentObj["alasanPenolakan"] = (alasanIdx !== -1 && data[i][alasanIdx]) ? String(data[i][alasanIdx]) : "";
+
       return ContentService.createTextOutput(JSON.stringify({
         status: "success",
-        data: {
-          noPendaftaran: data[i][noRegIdx],
-          namaLengkap: namaIdx !== -1 ? data[i][namaIdx] : "Siswa",
-          status: statusIdx !== -1 ? data[i][statusIdx] : "Proses",
-          alasanPenolakan: (alasanIdx !== -1 && data[i][alasanIdx]) ? String(data[i][alasanIdx]) : ""
-        }
+        data: studentObj
       })).setMimeType(ContentService.MimeType.JSON);
     }
   }
