@@ -463,7 +463,7 @@ export default function RegistrationForm() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    doc.text("Simpan bukti pendaftaran ini untuk mengecek status kelulusan secara berkala.", 72, bottomY + 10);
+    doc.text("Simpan bukti pendaftaran ini untuk mengecek status penerimaan secara berkala.", 72, bottomY + 10);
     doc.text(`Dicetak secara otomatis pada: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB.`, 72, bottomY + 16);
     
     doc.save(`Bukti_Pendaftaran_${noPendaftaran}.pdf`);
@@ -615,7 +615,7 @@ export default function RegistrationForm() {
         Swal.fire({
           icon: 'success',
           title: 'Pendaftaran Berhasil!',
-          html: `Nomor Pendaftaran Utama Anda:<br><b class="text-2xl font-extrabold text-blue-600 tracking-wide">${response.noPendaftaran}</b><br><br>Simpan nomor ini untuk mengecek hasil seleksi pengumuman kelulusan.`,
+          html: `Nomor Pendaftaran Utama Anda:<br><b class="text-2xl font-extrabold text-blue-600 tracking-wide">${response.noPendaftaran}</b><br><br>Simpan nomor ini untuk mengecek hasil seleksi pengumuman penerimaan.`,
           confirmButtonColor: '#10b981',
           confirmButtonText: 'Unduh Bukti Pendaftaran (PDF)',
           showCancelButton: true,
@@ -676,7 +676,7 @@ export default function RegistrationForm() {
               to="/cek-kelulusan"
               className="inline-flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3.5 rounded-xl font-bold transition-all text-sm shadow-md hover:shadow-lg"
             >
-              Cek Status Kelulusan
+              Cek Status Penerimaan
             </Link>
             <Link
               to="/"

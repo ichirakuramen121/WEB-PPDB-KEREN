@@ -92,7 +92,7 @@ export const getInitialMockSettings = (): AppSettings => {
     email: "info@sdncitapen.sch.id",
     deskripsi: "Mencetak generasi penerus bangsa yang cerdas, berakhlak mulia, dan siap menghadapi tantangan masa depan dengan pendidikan berkualitas di SDN Citapen Tasikmalaya.",
     statusPendaftaran: "Otomatis",
-    persyaratanDaftarUlang: "1. Membawa Bukti Kelulusan / Kelulusan SPMB (dicetak)\n2. Membawa Dokumen Daftar Ulang Resmi yang diunduh dari website (telah diisi dan ditandatangani)\n3. Fotokopi Kartu Keluarga (2 lembar)\n4. Fotokopi Akta Kelahiran (2 lembar)\n5. Pas Foto Calon Siswa berwarna ukuran 3x4 (4 lembar)\n6. Fotokopi KTP Orang Tua/Wali (masing-masing 2 lembar)\n7. Materai Rp 10.000 (1 lembar) untuk Surat Pernyataan",
+    persyaratanDaftarUlang: "1. Membawa Bukti Diterima / Penerimaan SPMB (dicetak)\n2. Membawa Dokumen Daftar Ulang Resmi yang diunduh dari website (telah diisi dan ditandatangani)\n3. Fotokopi Kartu Keluarga (2 lembar)\n4. Fotokopi Akta Kelahiran (2 lembar)\n5. Pas Foto Calon Siswa berwarna ukuran 3x4 (4 lembar)\n6. Fotokopi KTP Orang Tua/Wali (masing-masing 2 lembar)\n7. Materai Rp 10.000 (1 lembar) untuk Surat Pernyataan",
     tanggalDaftarUlang: "2026-07-06",
     tanggalPengumuman: "2026-07-02",
     logoSekolah: "https://upload.wikimedia.org/wikipedia/commons/d/d1/Logo_Tut_Wuri_Handayani_Kemendikbud_RI.png",

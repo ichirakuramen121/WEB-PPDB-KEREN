@@ -281,7 +281,7 @@ export default function Home() {
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-blue-100 hover:shadow-md transition-all relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-2 h-full bg-indigo-600"></div>
-              <div className="text-sm font-bold text-indigo-600 uppercase mb-2">2. Pengumuman Kelulusan</div>
+              <div className="text-sm font-bold text-indigo-600 uppercase mb-2">2. Pengumuman Penerimaan</div>
               <h3 className="text-xl font-bold text-slate-900 mb-1">02 Juli 2026</h3>
               <p className="text-indigo-600 font-semibold text-sm mb-4">Hari Kamis secara online</p>
               <p className="text-slate-600 text-sm leading-relaxed">Hasil seleksi calon peserta didik diumumkan di portal ini. Silakan masukkan Nomor Pendaftaran Anda.</p>
@@ -291,7 +291,7 @@ export default function Home() {
               <div className="text-sm font-bold text-emerald-600 uppercase mb-2">3. Daftar Ulang</div>
               <h3 className="text-xl font-bold text-slate-900 mb-1">06 Juli 2026</h3>
               <p className="text-emerald-600 font-semibold text-sm mb-4">Hari Senin secara offline</p>
-              <p className="text-slate-600 text-sm leading-relaxed">Bagi peserta yang dinyatakan lulus seleksi, WAJIB membawa dokumen & persyaratan daftar ulang ke sekolah.</p>
+              <p className="text-slate-600 text-sm leading-relaxed">Bagi peserta yang dinyatakan diterima seleksi, WAJIB membawa dokumen & persyaratan daftar ulang ke sekolah.</p>
             </div>
           </div>
         </div>
@@ -402,7 +402,7 @@ export default function Home() {
                 step: "04",
                 icon: <Calendar size={28} />,
                 title: "Pengumuman",
-                desc: "Cek status kelulusan dan cetak bukti pendaftaran."
+                desc: "Cek status penerimaan dan cetak bukti pendaftaran."
               }
             ].map((item, idx) => (
               <motion.div

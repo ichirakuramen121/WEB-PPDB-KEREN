@@ -656,7 +656,7 @@ export default function AdminDashboard() {
       // 1. Core fields first
       formattedItem['No Pendaftaran'] = item['No Pendaftaran'] || '-';
       formattedItem['Waktu Pendaftaran (WIB)'] = formatJakartaTimestamp(item.Timestamp || item.timestamp);
-      formattedItem['Status Kelulusan'] = item.Status || 'Proses';
+      formattedItem['Status Penerimaan'] = item.Status || 'Proses';
       
       const enriched = enrichFields(settings?.formFields || []);
       
@@ -750,7 +750,7 @@ export default function AdminDashboard() {
     doc.text(`: ${student['No Pendaftaran']}`, 50, 65);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Status Kelulusan", 110, 65);
+    doc.text("Status Penerimaan", 110, 65);
     doc.setFont("helvetica", "normal");
     doc.text(`: ${student.Status}`, 145, 65);
 
@@ -1494,7 +1494,7 @@ export default function AdminDashboard() {
                       {localSettings.gambarHeaderBeranda && <img src={localSettings.gambarHeaderBeranda} alt="Header Beranda" className="mt-2 h-32 object-cover border rounded bg-white" />}
                     </div>
                     <div>
-                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal Pengumuman Kelulusan</label>
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal Pengumuman Penerimaan</label>
                       <input
                         type="date"
                         value={localSettings.tanggalPengumuman || ''}
@@ -1718,7 +1718,7 @@ export default function AdminDashboard() {
                               Pengumuman Rapat Orang Tua / Wali Calon Siswa Baru
                             </h4>
                             <p className="text-xs text-slate-400 leading-relaxed">
-                              Aktifkan fitur ini jika ingin mengumumkan jadwal koordinasi dan rapat orang tua menjelang masuk sekolah. Informasi ini akan ditampilkan di Beranda dan menu Cek Kelulusan.
+                              Aktifkan fitur ini jika ingin mengumumkan jadwal koordinasi dan rapat orang tua menjelang masuk sekolah. Informasi ini akan ditampilkan di Beranda dan menu Cek Penerimaan.
                             </p>
                           </div>
                           <div className="flex items-center shrink-0">
@@ -2060,7 +2060,7 @@ export default function AdminDashboard() {
 
                 {settingsTab === 'surat' && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-semibold">Pengaturan Surat Kelulusan</h3>
+                    <h3 className="text-lg font-semibold">Pengaturan Surat Penerimaan</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Nomor Surat</label>

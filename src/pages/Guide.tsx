@@ -78,7 +78,7 @@ export default function Guide() {
     "Isi seluruh kolom formulir dengan data yang valid dan sesuai dengan dokumen asli.",
     "Tandai lokasi rumah Anda di peta yang disediakan untuk perhitungan jarak.",
     "Unggah dokumen persyaratan pada kolom yang tersedia.",
-    "Kirim formulir dan simpan Nomor Pendaftaran Anda untuk mengecek status kelulusan."
+    "Kirim formulir dan simpan Nomor Pendaftaran Anda untuk mengecek status penerimaan."
   ];
 
   return (

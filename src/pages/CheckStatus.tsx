@@ -100,7 +100,7 @@ export default function CheckStatus() {
     let swalInstance: any = null;
     try {
       swalInstance = Swal.fire({
-        title: 'Menyiapkan Bukti Kelulusan...',
+        title: 'Menyiapkan Bukti Diterima...',
         text: 'Sedang memproses gambar kop surat, stempel, dan tanda tangan.',
         allowOutsideClick: false,
         didOpen: () => {
@@ -169,7 +169,7 @@ export default function CheckStatus() {
     currentY += 12;
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('BUKTI KELULUSAN SPMB', 105, currentY, { align: 'center' });
+    doc.text('BUKTI DITERIMA SPMB', 105, currentY, { align: 'center' });
     
     currentY += 8;
     doc.setFontSize(12);
@@ -206,7 +206,7 @@ export default function CheckStatus() {
     doc.text(':', 70, currentY + lineSpacing * 2);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 128, 0); // Green
-    doc.text('LULUS', 75, currentY + lineSpacing * 2);
+    doc.text('DITERIMA', 75, currentY + lineSpacing * 2);
     doc.setTextColor(0, 0, 0); // Reset to black
     
     // Requirements
@@ -215,7 +215,7 @@ export default function CheckStatus() {
     doc.text('Diharapkan segera melakukan daftar ulang dengan membawa persyaratan berikut:', 20, currentY);
     
     currentY += lineSpacing;
-    const reqText = settings?.persyaratanDaftarUlang || '1. Bukti Kelulusan ini (dicetak)\n2. Fotokopi Akta Kelahiran (2 lembar)\n3. Fotokopi Kartu Keluarga (2 lembar)\n4. Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal';
+    const reqText = (settings?.persyaratanDaftarUlang || '1. Bukti Diterima ini (dicetak)\n2. Fotokopi Akta Kelahiran (2 lembar)\n3. Fotokopi Kartu Keluarga (2 lembar)\n4. Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal').replace(/Bukti Kelulusan/g, 'Bukti Diterima');
     const splitReq = doc.splitTextToSize(reqText, 160);
     doc.text(splitReq, 25, currentY);
     
@@ -290,7 +290,7 @@ export default function CheckStatus() {
     doc.text(`Dicetak pada: ${dateStr}`, 20, 287);
     doc.setTextColor(0, 0, 0); // Reset color to black
     
-    doc.save(`Bukti_Kelulusan_${data.noPendaftaran}.pdf`);
+    doc.save(`Bukti_Diterima_${data.noPendaftaran}.pdf`);
   };
 
   const printDokumenDaftarUlang = (data: any) => {
@@ -463,8 +463,8 @@ export default function CheckStatus() {
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <CheckCircle className="text-green-600" size={32} />
             </div>
-            <h3 className="text-2xl md:text-3xl font-bold text-green-800 mb-2">Selamat! Anda Lulus</h3>
-            <p className="text-green-700 mb-6 font-medium">Anda dinyatakan LULUS seleksi SPMB Online {settings?.namaSekolah || 'SDN Citapen'}.</p>
+            <h3 className="text-2xl md:text-3xl font-bold text-green-800 mb-2">Selamat! Anda Diterima</h3>
+            <p className="text-green-700 mb-6 font-medium">Anda dinyatakan DITERIMA seleksi SPMB Online {settings?.namaSekolah || 'SDN Citapen'}.</p>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left mb-6">
               {/* Left Column: Requirements */}
@@ -482,7 +482,7 @@ export default function CheckStatus() {
                     </p>
                   )}
                   <div className="text-sm text-slate-700 whitespace-pre-line space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-155 leading-relaxed font-sans">
-                    {settings?.persyaratanDaftarUlang || '1. Membawa Bukti Kelulusan yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal'}
+                    {(settings?.persyaratanDaftarUlang || '1. Membawa Bukti Diterima yang dicetak\n2. Membawa Fotokopi Akta Kelahiran (2 lembar)\n3. Membawa Fotokopi Kartu Keluarga (2 lembar)\n4. Membawa Pas Foto 3x4 (4 lembar)\n5. Melakukan pembayaran administrasi awal').replace(/Bukti Kelulusan/g, 'Bukti Diterima')}
                   </div>
                 </div>
               </div>
@@ -590,7 +590,7 @@ export default function CheckStatus() {
                 onClick={() => printBuktiLulus(data)}
                 className="inline-flex items-center justify-center gap-3 w-full sm:w-2/3 bg-blue-600 hover:bg-blue-700 text-white px-5 py-4 rounded-xl font-bold transition-all shadow-md hover:shadow-lg active:scale-98 uppercase tracking-wide text-xs md:text-sm"
               >
-                <Printer size={18} /> Cetak Bukti Kelulusan
+                <Printer size={18} /> Cetak Bukti Diterima
               </button>
             </div>
           </div>
@@ -601,12 +601,12 @@ export default function CheckStatus() {
             <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
               <XCircle className="text-red-600" size={32} />
             </div>
-            <h3 className="text-2xl font-bold text-red-800 mb-2">Mohon Maaf, Anda Tidak Lulus</h3>
+            <h3 className="text-2xl font-bold text-red-800 mb-2">Mohon Maaf, Anda Tidak Diterima</h3>
             <p className="text-red-700 mb-4">Tetap semangat dan jangan menyerah.</p>
             {data?.alasanPenolakan && (
               <div className="bg-white rounded-lg p-4 border border-red-100 text-left">
                 <h4 className="font-semibold text-red-800 mb-1 text-sm">Alasan:</h4>
-                <p className="text-sm text-red-700 whitespace-pre-line">{data.alasanPenolakan}</p>
+                 <p className="text-sm text-red-700 whitespace-pre-line">{data.alasanPenolakan}</p>
               </div>
             )}
           </div>
@@ -622,7 +622,7 @@ export default function CheckStatus() {
             <h3 className="text-2xl font-bold text-amber-800 mb-2">Data Sedang Diproses</h3>
             <p className="text-amber-700">
               {isBeforePengumuman 
-                ? `Pengumuman kelulusan akan dibuka pada tanggal ${safeFormatDate(settings.tanggalPengumuman)}.` 
+                ? `Pengumuman hasil seleksi penerimaan akan dibuka pada tanggal ${safeFormatDate(settings.tanggalPengumuman)}.` 
                 : 'Berkas Anda sedang dalam tahap verifikasi panitia.'}
             </p>
           </div>
@@ -643,7 +643,7 @@ export default function CheckStatus() {
           className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100"
         >
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-8 py-8 text-white text-center">
-            <h2 className="text-2xl font-bold mb-2">Cek Status Kelulusan</h2>
+            <h2 className="text-2xl font-bold mb-2">Cek Status Penerimaan</h2>
             <p className="text-blue-100 text-sm">Masukkan nomor pendaftaran Anda untuk melihat hasil seleksi SPMB.</p>
           </div>
 

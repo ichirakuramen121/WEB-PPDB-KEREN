@@ -56,7 +56,7 @@ export default function Footer() {
               <li><Link to="/" className="hover:text-blue-400 transition-colors">Beranda</Link></li>
               <li><Link to="/panduan" className="hover:text-blue-400 transition-colors">Panduan Pendaftaran</Link></li>
               <li><Link to="/daftar" className="hover:text-blue-400 transition-colors">Formulir SPMB</Link></li>
-              <li><Link to="/cek-kelulusan" className="hover:text-blue-400 transition-colors">Cek Hasil Kelulusan</Link></li>
+              <li><Link to="/cek-kelulusan" className="hover:text-blue-400 transition-colors">Cek Hasil Penerimaan</Link></li>
             </ul>
           </div>
           

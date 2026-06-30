@@ -111,7 +111,7 @@ export default function RapatDetail() {
                 </h4>
                 <ul className="list-disc pl-5 space-y-1.5 text-xs text-slate-600">
                   <li>Membawa alat tulis pribadi (pulpen) untuk mengisi daftar hadir dan lembar persetujuan.</li>
-                  <li>Membawa Bukti Kelulusan cetak (yang diunduh dari menu Cek Kelulusan).</li>
+                  <li>Membawa Bukti Diterima cetak (yang diunduh dari menu Cek Penerimaan).</li>
                   <li>Mengenakan pakaian bebas, rapi, sopan, dan wajib mematuhi prokes sekolah.</li>
                   <li>Membawa berkas pendaftaran ulang yang belum lengkap (bagi yang memiliki kekurangan berkas).</li>
                 </ul>

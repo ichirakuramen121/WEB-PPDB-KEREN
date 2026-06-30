@@ -11,7 +11,7 @@ export default function Navbar() {
     { name: 'Beranda', path: '/' },
     { name: 'Panduan', path: '/panduan' },
     { name: 'Pendaftaran', path: '/daftar' },
-    { name: 'Cek Kelulusan', path: '/cek-kelulusan' },
+    { name: 'Cek Penerimaan', path: '/cek-kelulusan' },
   ];
 
   return (
