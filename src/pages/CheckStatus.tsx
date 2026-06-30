@@ -229,7 +229,7 @@ export default function CheckStatus() {
     const today = new Date();
     const dateStr = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const tempat = settings?.tempatSurat || '....................';
-    const tanggal = settings?.tanggalSurat ? safeFormatDate(settings.tanggalSurat) : dateStr;
+    const tanggal = settings?.tanggalSurat ? safeFormatDate(settings.tanggalSurat, false) : dateStr;
     
     doc.text(`${tempat}, ${tanggal}`, 140, currentY);
     doc.text('Kepala Sekolah', 140, currentY + 6);
@@ -358,7 +358,7 @@ export default function CheckStatus() {
     const today = new Date();
     const dateStr = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const tempat = settings?.tempatSurat || 'Tasikmalaya';
-    const tanggal = settings?.tanggalSurat ? safeFormatDate(settings.tanggalSurat) : dateStr;
+    const tanggal = settings?.tanggalSurat ? safeFormatDate(settings.tanggalSurat, false) : dateStr;
     
     doc.text(`${tempat}, ${tanggal}`, 130, currentY);
     currentY += 6;
@@ -436,7 +436,7 @@ export default function CheckStatus() {
     doc.save(`Dokumen_Sekolah_DaftarUlang_${data.noPendaftaran}.pdf`);
   };
 
-  const safeFormatDate = (dateString?: string) => {
+  const safeFormatDate = (dateString?: string, includeTime: boolean = true) => {
     if (!dateString) return '';
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return dateString;
@@ -444,7 +444,7 @@ export default function CheckStatus() {
     const formattedDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     const hasTime = dateString.includes('T') || dateString.includes(':') || dateString.includes(' ');
     
-    if (hasTime) {
+    if (hasTime && includeTime) {
       const hours = String(d.getHours()).padStart(2, '0');
       const minutes = String(d.getMinutes()).padStart(2, '0');
       return `${formattedDate} pukul ${hours}:${minutes} WIB`;
