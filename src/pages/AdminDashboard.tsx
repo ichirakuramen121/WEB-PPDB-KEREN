@@ -1494,14 +1494,20 @@ export default function AdminDashboard() {
                       {localSettings.gambarHeaderBeranda && <img src={localSettings.gambarHeaderBeranda} alt="Header Beranda" className="mt-2 h-32 object-cover border rounded bg-white" />}
                     </div>
                     <div>
-                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal Pengumuman Penerimaan</label>
+                      <label className={cn("block text-sm font-medium mb-1", isDarkMode ? "text-slate-300" : "text-slate-700")}>Tanggal & Waktu Pengumuman Penerimaan (Otomatis)</label>
                       <input
-                        type="date"
-                        value={localSettings.tanggalPengumuman || ''}
+                        type="datetime-local"
+                        value={
+                          localSettings.tanggalPengumuman
+                            ? localSettings.tanggalPengumuman.includes('T')
+                              ? localSettings.tanggalPengumuman
+                              : `${localSettings.tanggalPengumuman}T08:00`
+                            : ''
+                        }
                         onChange={e => setLocalSettings({...localSettings, tanggalPengumuman: e.target.value})}
                         className={cn("w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500", isDarkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-slate-300")}
                       />
-                      <p className="text-xs text-slate-500 mt-1">Sebelum tanggal ini, pendaftar akan melihat status "Proses".</p>
+                      <p className="text-xs text-slate-500 mt-1">Sebelum tanggal & waktu ini, pendaftar akan melihat status "Proses".</p>
                     </div>
 
                     <div className="md:col-span-2 border-t border-dashed border-slate-700/30 pt-6 mt-4">

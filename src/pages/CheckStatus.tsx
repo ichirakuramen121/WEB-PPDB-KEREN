@@ -440,7 +440,16 @@ export default function CheckStatus() {
     if (!dateString) return '';
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return dateString;
-    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    const formattedDate = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    const hasTime = dateString.includes('T') || dateString.includes(':') || dateString.includes(' ');
+    
+    if (hasTime) {
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${formattedDate} pukul ${hours}:${minutes} WIB`;
+    }
+    return formattedDate;
   };
 
   const getStatusDisplay = (status: string, data?: any) => {
@@ -449,7 +458,10 @@ export default function CheckStatus() {
       const pengumumanDate = new Date(settings.tanggalPengumuman);
       if (!isNaN(pengumumanDate.getTime())) {
         const now = new Date();
-        pengumumanDate.setHours(0, 0, 0, 0);
+        const hasTime = settings.tanggalPengumuman.includes('T') || settings.tanggalPengumuman.includes(':');
+        if (!hasTime) {
+          pengumumanDate.setHours(0, 0, 0, 0);
+        }
         if (now < pengumumanDate) {
           displayStatus = 'Proses';
         }
@@ -613,7 +625,12 @@ export default function CheckStatus() {
         );
       default:
         const parsePengumuman = settings?.tanggalPengumuman ? new Date(settings.tanggalPengumuman) : null;
-        const isBeforePengumuman = parsePengumuman && !isNaN(parsePengumuman.getTime()) && new Date() < new Date(parsePengumuman.setHours(0, 0, 0, 0));
+        const hasTime = settings?.tanggalPengumuman ? (settings.tanggalPengumuman.includes('T') || settings.tanggalPengumuman.includes(':')) : false;
+        const compareDate = parsePengumuman ? new Date(parsePengumuman) : null;
+        if (compareDate && !hasTime) {
+          compareDate.setHours(0, 0, 0, 0);
+        }
+        const isBeforePengumuman = compareDate && !isNaN(compareDate.getTime()) && new Date() < compareDate;
         return (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
             <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
